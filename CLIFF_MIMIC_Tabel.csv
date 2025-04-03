@@ -1,0 +1,5 @@
+,Variable Name,Data Type,Definition,Permissible VAlues
+1,hospitalization_id,VARCHAR,Unique identifier linking the code status event to a specific hospitalization in the CLIF database.,"Unique identifier, e.g., 123456"
+2,start_dttm,DATETIME,The date and time when the specific code status was initiated.,Example: 2024-12-03 08:30:00+00:00
+3,code_status_name,VARCHAR,The name/description of the code status.,Free text to describe the code status.
+4,code_status_category,VARCHAR,Categorical variable specifying the code status during the hospitalization.,"E.g., DNR, UDNR, DNR/DNI, Full, Presume Full, Other"
