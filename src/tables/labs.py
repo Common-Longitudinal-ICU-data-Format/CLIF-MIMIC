@@ -24,15 +24,11 @@ from src.utils import (
     CLIF_DTTM_FORMAT,
 )
 
+from src.utils_qa import all_null_check
+
 def _permitted_lab_categories() -> List[str]:
     clif_labs_mcide = pd.read_csv("https://raw.githubusercontent.com/Common-Longitudinal-ICU-data-Format/CLIF/refs/heads/main/mCIDE/clif_lab_categories.csv")
     return clif_labs_mcide["lab_category"].unique()
-
-all_null_check = pa.Check(
-    lambda s: s.isna().all(), 
-    element_wise=False, 
-    error="Column must contain only null values"
-    )
 
 CLIF_LABS_SCHEMA = pa.DataFrameSchema(
     {
