@@ -24,6 +24,18 @@ HOSP_COL_RENAME_MAPPER = {
     "discharge_location": "discharge_name"
 }
 
+ADMISSION_TYPE_MAPPER = {
+    "DIRECT EMER.": "ed",
+    "OBSERVATION ADMIT": "ed",
+    "URGENT": "ed",
+    "EW EMER.": "ed",	
+    "EU OBSERVATION": "ed",
+    "DIRECT OBSERVATION": "direct",
+    "ELECTIVE": "elective",
+    "AMBULATORY OBSERVATION": "direct",
+    "SURGICAL SAME DAY ADMISSION": "elective"
+}
+
 def _main():
     """
     Processes the `admissions` and `patients` tables to create the CLIF hospitalization table.
