@@ -39,8 +39,7 @@ def _main():
     
     logging.info("mapping mimic careunit to clif location_category and location_type...")
     adt['location_category'] = adt['careunit'].map(location_category_mapper)
-    # NOTE
-    # adt['location_type'] = adt['careunit'].map(location_type_mapper)
+    adt['location_type'] = adt['careunit'].map(location_type_mapper)
     
     logging.info("renaming, reordering, and re-casting columns...")
     adt_final = rename_and_reorder_cols(adt, ADT_COL_RENAME_MAPPER, ADT_COL_NAMES)
