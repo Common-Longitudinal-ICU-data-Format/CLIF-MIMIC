@@ -12,6 +12,7 @@ from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_cs
     convert_tz_to_utc
 from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
 import pandera as pa
+from pandera.dtypes import Float32
 import json
 setup_logging()
 
@@ -27,7 +28,7 @@ PA_SCHEMA = pa.DataFrameSchema(
         "assessment_name": pa.Column(str, nullable=False),
         "assessment_category": pa.Column(str, nullable=False),
         "assessment_group": pa.Column(str, nullable=False),
-        "numerical_value": pa.Column(float, nullable=True),
+        "numerical_value": pa.Column(Float32, nullable=True),
         "categorical_value": pa.Column(str, nullable=True),
         "text_value": pa.Column(str, nullable=True),
     }
@@ -307,7 +308,7 @@ def sbt_fetched(sbt_translated: pd.DataFrame) -> pd.DataFrame:
         time as recorded_dttm,
         label as assessment_name,
         assessment_category,
-        CAST(NULL as DOUBLE) as numerical_value,
+        CAST(NULL as FLOAT) as numerical_value,
         CASE WHEN assessment_category = 'sbt_delivery_pass_fail' 
             THEN (CASE WHEN value = 'Yes' THEN 'Pass' 
                 WHEN value = 'No' THEN 'Fail' 
