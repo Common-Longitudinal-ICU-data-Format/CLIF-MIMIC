@@ -25,6 +25,8 @@ from src.utils import (
     CLIF_DTTM_FORMAT,
 )
 
+setup_logging()
+
 from src.utils_qa import all_null_check
 
 CRRT_MODE_CATEGORIES = ["scuf", "cvvh", "cvvhd", "cvvhdf"]
@@ -48,6 +50,7 @@ CLIF_CRRT_SCHEMA = pa.DataFrameSchema(
 CRRT_COLUMNS: List[str] = list(CLIF_CRRT_SCHEMA.columns.keys())
 
 def dialysis_mapping() -> pd.DataFrame:
+    logging.info("loading dialysis mapping...")
     return load_mapping_csv("dialysis")
 
 def crrt_items(dialysis_mapping: pd.DataFrame) -> pd.DataFrame:
