@@ -11,7 +11,7 @@ from src.utils import construct_mapper_dict, load_mapping_csv, \
 setup_logging()
 
 ADT_COL_NAMES = [
-    "patient_id", "hospitalization_id", "hospital_id", "in_dttm", "out_dttm", "location_name", "location_category"
+    "patient_id", "hospitalization_id", "hospital_id", "in_dttm", "out_dttm", "location_name", "location_category", "location_type"
 ]
 
 ADT_COL_RENAME_MAPPER = {
