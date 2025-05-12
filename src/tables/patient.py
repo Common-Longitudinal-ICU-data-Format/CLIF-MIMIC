@@ -347,4 +347,4 @@ def _test():
     return output
 
 if __name__ == "__main__":
-    _test()
+    _main()
