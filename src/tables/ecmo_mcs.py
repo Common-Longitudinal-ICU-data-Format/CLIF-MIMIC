@@ -2,46 +2,73 @@
 import numpy as np
 import pandas as pd
 import logging
+import duckdb
+from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
+import pandera as pa
+from pandera.dtypes import Float32
+from typing import Dict, List
+import json
 from importlib import reload
-import src.utils
-reload(src.utils)
+import src.utils as utils
+# reload(utils)
 from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_csv, \
     get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
-    convert_and_sort_datetime, setup_logging, item_id_to_label   
+    convert_and_sort_datetime, setup_logging, item_id_to_label, convert_tz_to_utc
 
 setup_logging()
 
-def main():
-    logging.info("starting to build clif ecmo_mcs table -- ")
-    # load mapping 
-    ecmo_mapping = load_mapping_csv("ecmo")
+CLIF_ECMO_SCHEMA = pa.DataFrameSchema(
+    {
+        "hospitalization_id": pa.Column(pa.String, nullable=False),
+        "recorded_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False),
+        "device_name": pa.Column(pa.String, nullable=True),
+        "device_category": pa.Column(pa.String, nullable=True),
+        "mcs_category": pa.Column(pa.String, nullable=True), # check whether it should be mcs_group instead
+        "side": pa.Column(pa.String,  nullable=True, checks=[pa.Check.isin(["left", "right", "both", None])]),
+        "device_metric_name": pa.Column(pa.String, nullable=True),
+        "device_rate": pa.Column(pa.Float32, nullable=True),
+        "flow": pa.Column(pa.Float32, nullable=True),
+        "sweep": pa.Column(pa.Float32, nullable=True),
+        "fdo2": pa.Column(pa.Float32, nullable=True),
+    },
+    strict=True,
+)
+
+def ecmo_mapping() -> pd.DataFrame:
+    return load_mapping_csv("ecmo_mcs")
+
+def ecmo_mapper(ecmo_mapping: pd.DataFrame) -> dict:
     ecmo_mapper = construct_mapper_dict(ecmo_mapping, "itemid", "variable")
+    return ecmo_mapper
 
+def ecmo_item_ids(ecmo_mapping: pd.DataFrame) -> pd.Series:
+    # FIXME: this might be off or redundant -- need to check
     logging.info("parsing the mapping files to identify relevant items and fetch corresponding events...")
-
-    ecmo_item_ids = get_relevant_item_ids(
+    return get_relevant_item_ids(
         mapping_df = ecmo_mapping, decision_col = "variable" 
         ) 
-    ecmo_events = fetch_mimic_events(ecmo_item_ids)
 
-    ecmo_events["variable"] = ecmo_events["itemid"].map(ecmo_mapper)
-    ecmo_events = ecmo_events.dropna(subset=['variable'])  
+def extracted_ecmo_events(ecmo_item_ids: pd.Series, ecmo_mapper: dict) -> pd.DataFrame:
+    df = fetch_mimic_events(ecmo_item_ids)
+    df["variable"] = df["itemid"].map(ecmo_mapper)
+    df.dropna(subset=['variable'], inplace=True)
+    return df
 
-    # dedup - remove duplicates to prepare for pivoting 
-    ecmo_duplicates: pd.DataFrame = find_duplicates(ecmo_events)
-    
+def duplicates_removed(extracted_ecmo_events: pd.DataFrame) -> pd.DataFrame:
+    '''remove duplicates to prepare for pivoting'''
+    # FIXME: the logic here is clearly off as the find_duplicates is not being used -- need to check
+    ecmo_duplicates: pd.DataFrame = find_duplicates(extracted_ecmo_events)
     logging.info(f"identified {len(ecmo_duplicates)} 'duplicated' events to be cleaned.")
-    ecmo_events = ecmo_events.drop_duplicates()
+    return extracted_ecmo_events.drop_duplicates()
 
-
-    logging.info("pivoting and coalescing...")
-
+def ecmo_events_cleaned(duplicates_removed: pd.DataFrame) -> pd.DataFrame:
+    df = duplicates_removed
     # hard coded this because for some reason all the Heartmate devices weren't listed in the "category" column
-    ecmo_events.loc[ecmo_events['label'].str.contains('HM II', na=False), 'category'] = 'HM II'
+    df.loc[df['label'].str.contains('HM II', na=False), 'category'] = 'HM II'
 
     # hard coding mcs_category based on the labels for different measurements (flow, speed, etc.) - based on Curt's guidance. 
     # This could probably be converted to a second mcide--I think that is how the respiratory support table does it?
-    ecmo_events['mcs_category'] = ecmo_events['label'].apply(
+    df['mcs_category'] = df['label'].apply(
         lambda x: 'ECMO' if 'ECMO' in x else 
                 'LVAD' if 'LVAD' in x else 
                 'RVAD' if 'RVAD' in x else 
@@ -55,112 +82,170 @@ def main():
                 'RVAD' if 'Right Ventricular Assist Device Flow' in x else pd.NA
     )
     # Fill mcs_category with 'LVAD' where value is '2.5 / CP' and mcs_category is NA - based on Curt's guidance
-    ecmo_events.loc[
-        (ecmo_events['value'] == '2.5 / CP') & (ecmo_events['mcs_category'].isna()),
+    df.loc[
+        (df['value'] == '2.5 / CP') & (df['mcs_category'].isna()),
         'mcs_category'
     ] = 'LVAD'
 
     # Fill mcs_category with 'RVAD' where value is 'RP' and mcs_category is NA - based on Curt's guidance
-    ecmo_events.loc[
-        (ecmo_events['value'] == 'RP') & (ecmo_events['mcs_category'].isna()),
+    df.loc[
+        (df['value'] == 'RP') & (df['mcs_category'].isna()),
         'mcs_category'
     ] = 'RVAD'
 
-    ecmo_events['device_metric_name'] = ecmo_events['category'].apply(lambda x: 'Performance Level' if isinstance(x, str) and 'Impella' in x else 'RPM')
-    ecmo_events = ecmo_events[["hadm_id", "time", 'category', 'mcs_category', 'device_metric_name', "itemid", "value"]]
+    df['device_metric_name'] = df['category'].apply(lambda x: 'Performance Level' if isinstance(x, str) and 'Impella' in x else 'RPM')
+    return df[["hadm_id", "time", 'category', 'mcs_category', 'device_metric_name', "itemid", "value"]]
 
-
-
-    ecmo_wider_in_ids = ecmo_events.pivot(
+def pivoted_wider(ecmo_events_cleaned: pd.DataFrame) -> pd.DataFrame:
+    df = ecmo_events_cleaned.pivot(
         index = ["hadm_id", "time", 'category', 'mcs_category', 'device_metric_name'], 
         columns = ["itemid"],
         values = ["value"]
     ).reset_index()
-    ecmo_wider_in_ids = convert_and_sort_datetime(ecmo_wider_in_ids)
-    
+    return convert_and_sort_datetime(df)
 
-    ecmo_wider_in_ids.columns = ['hospitalization_id', 'recorded_dttm', 'device_category', 'mcs_category', 'device_metric_name',
+def coalesced(pivoted_wider: pd.DataFrame) -> pd.DataFrame:
+    df = pivoted_wider
+    df.columns = ['hospitalization_id', 'recorded_dttm', 'device_category', 'mcs_category', 'device_metric_name',
                              '220125', '220128', '228154', '228156', '228192', '228195', '228198', '228873', 
                              '228874', '229254', '229255', '229262', '229263', '229268', '229270','229277', '229278','229280', 
                              '229303', '229304', '229675', '229679', '229823', '229829', '229841', '229842', '229845',
                              '229846', '230086']
     
     # Coalescing the different labels for device rate, flow, sweep, fdo2, and device name based on the device.
-    ecmo_wider_in_ids["device_rate"] = ecmo_wider_in_ids[["229262", "229263", "229829", "229845", "229277", "229303", "228874", "228156", "229675", "228195"]].bfill(axis=1).iloc[:, 0]
-    ecmo_wider_in_ids["flow"] = ecmo_wider_in_ids[["229254", "229255", "229823", "229842", "229270", "229304", "228873", "220125", "220128", "228154", "228154", "228198"]].bfill(axis=1).iloc[:, 0]
-    ecmo_wider_in_ids["sweep"] = ecmo_wider_in_ids[["229278", "229846", "228192"]].bfill(axis=1).iloc[:, 0]
-    ecmo_wider_in_ids["fdo2"] = ecmo_wider_in_ids[["229280", "229841", "230086"]].bfill(axis=1).iloc[:, 0]
-    ecmo_wider_in_ids["device_name"] = ecmo_wider_in_ids[["229268", "229679"]].bfill(axis=1).iloc[:, 0]
+    df["device_rate"] = df[["229262", "229263", "229829", "229845", "229277", "229303", "228874", "228156", "229675", "228195"]].bfill(axis=1).iloc[:, 0]
+    df["flow"] = df[["229254", "229255", "229823", "229842", "229270", "229304", "228873", "220125", "220128", "228154", "228154", "228198"]].bfill(axis=1).iloc[:, 0]
+    df["sweep"] = df[["229278", "229846", "228192"]].bfill(axis=1).iloc[:, 0]
+    df["fdo2"] = df[["229280", "229841", "230086"]].bfill(axis=1).iloc[:, 0]
+    df["device_name"] = df[["229268", "229679"]].bfill(axis=1).iloc[:, 0] 
+    return df
 
+def cleaned(coalesced: pd.DataFrame) -> pd.DataFrame:
     logging.info("cleaning up column names and data types...")
-
-    ecmo_wider_cleaned = ecmo_wider_in_ids.loc[:, ['hospitalization_id', 'recorded_dttm', 'device_name', 'device_category', 'mcs_category', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdo2']]
-    ecmo_wider_cleaned['flow'] = ecmo_wider_cleaned['flow'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
-    ecmo_wider_cleaned['sweep'] = ecmo_wider_cleaned['sweep'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
+    df = coalesced.loc[:, ['hospitalization_id', 'recorded_dttm', 'device_name', 'device_category', 'mcs_category', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdo2']]
+    df['flow'] = df['flow'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
+    df['sweep'] = df['sweep'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
 
     # Putting raw strings in the device_name, keeping device_category to defined mcide
-    ecmo_wider_cleaned.loc[ecmo_wider_cleaned['device_category'] == 'Hemodynamics', 'device_name'] = 'Hemodynamics'
-    ecmo_wider_cleaned.loc[ecmo_wider_cleaned['device_category'] == 'Hemodynamics', 'device_category'] = np.nan
+    df.loc[df['device_category'] == 'Hemodynamics', 'device_name'] = 'Hemodynamics'
+    df.loc[df['device_category'] == 'Hemodynamics', 'device_category'] = np.nan
 
-    ecmo_wider_cleaned.loc[ecmo_wider_cleaned['device_category'] == 'Durable VAD', 'device_name'] = 'Durable VAD'
-    ecmo_wider_cleaned.loc[ecmo_wider_cleaned['device_category'] == 'Durable VAD', 'device_category'] = np.nan
+    df.loc[df['device_category'] == 'Durable VAD', 'device_name'] = 'Durable VAD'
+    df.loc[df['device_category'] == 'Durable VAD', 'device_category'] = np.nan
 
-    ecmo_wider_cleaned.loc[ecmo_wider_cleaned['device_category'] == 'HM II', 'device_name'] = 'HM II'
-    ecmo_wider_cleaned.loc[ecmo_wider_cleaned['device_category'] == 'HM II', 'device_category'] = 'HeartMate'
+    df.loc[df['device_category'] == 'HM II', 'device_name'] = 'HM II'
+    df.loc[df['device_category'] == 'HM II', 'device_category'] = 'HeartMate'
 
-    ecmo_wider_cleaned.loc[ecmo_wider_cleaned['mcs_category'].isna() & (ecmo_wider_cleaned['device_category'] == 'ECMO'), 'mcs_category'] = 'ECMO'
-    ecmo_wider_cleaned.loc[ecmo_wider_cleaned['device_category'].isna(), 'device_category'] = 'Other'
+    df.loc[df['mcs_category'].isna() & (df['device_category'] == 'ECMO'), 'mcs_category'] = 'ECMO'
+    df.loc[df['device_category'].isna(), 'device_category'] = 'Other'
 
-    ecmo_wider_cleaned = ecmo_wider_cleaned.drop_duplicates()
-    ecmo_wider_cleaned.loc[ecmo_wider_cleaned['device_rate'].isna(), 'device_metric_name'] = pd.NA
+    df = df.drop_duplicates()
+    df.loc[df['device_rate'].isna(), 'device_metric_name'] = pd.NA
 
-    ## I think a possible test here could be crosstabs of device_name and device_category and device_category and mcs_category to make sure everything is mapped correctly
+    ## NOTE: a possible test here could be crosstabs of device_name and device_category and device_category and mcs_category to make sure everything is mapped correctly
+    return df
 
+def side(cleaned: pd.DataFrame) -> pd.Series:
+    df = cleaned
     # Define conditions for defining "side"
     conditions = [
-        ecmo_wider_cleaned['mcs_category'] == 'LVAD',
-        ecmo_wider_cleaned['mcs_category'] == 'RVAD',
-        (ecmo_wider_cleaned['mcs_category'] == 'ECMO') & (ecmo_wider_cleaned['device_name'] == 'VV'),
-        (ecmo_wider_cleaned['mcs_category'] == 'ECMO') & (ecmo_wider_cleaned['device_name'].isin(['VA', 'VAV']))
+        df['mcs_category'] == 'LVAD',
+        df['mcs_category'] == 'RVAD',
+        (df['mcs_category'] == 'ECMO') & (df['device_name'] == 'VV'),
+        (df['mcs_category'] == 'ECMO') & (df['device_name'].isin(['VA', 'VAV']))
     ]
 
     # Define corresponding values
     choices = ['left', 'right', 'right', 'both']
 
+    ## NOTE: a possible test here could be crosstabs of mcs_category and side to make sure everything is mapped correctly
+    
     # Create 'side' column
-    ecmo_wider_cleaned['side'] = np.select(conditions, choices, default=None)
-
-    ## I think a possible test here could be crosstabs of mcs_category and side to make sure everything is mapped correctly
+    return np.select(conditions, choices, default=None)
 
 
+def recast(cleaned: pd.DataFrame, side: pd.Series) -> pd.DataFrame:
+    df = cleaned
+    df['side'] = side
     # Convert specific columns to string
-    ecmo_wider_cleaned[['hospitalization_id', 'device_name', 'device_category', 'device_metric_name']] = ecmo_wider_cleaned[['hospitalization_id', 'device_name', 'device_category', 'device_metric_name']].astype('string')
+    df[['hospitalization_id', 'device_name', 'device_category', 'device_metric_name']] = df[['hospitalization_id', 'device_name', 'device_category', 'device_metric_name']].astype('string')
 
     # Convert specific columns to numeric
-    ecmo_wider_cleaned[['flow', 'sweep', 'fdo2']] = ecmo_wider_cleaned[['flow', 'sweep', 'fdo2']].apply(pd.to_numeric, errors='coerce')
+    df[['device_rate', 'flow', 'sweep', 'fdo2']] = df[['device_rate', 'flow', 'sweep', 'fdo2']].apply(pd.to_numeric, errors='coerce', downcast='float')
+    
+    df['recorded_dttm'] = convert_tz_to_utc(df['recorded_dttm'])
+    return df
 
+def outliers_removed(recast: pd.DataFrame) -> pd.DataFrame:
+    # Value cutoffs -- NOTE: should this be here or project specific?
+    df = recast
+    df.loc[~df['sweep'].between(0, 15), 'sweep'] = pd.NA
+    df.loc[~df['flow'].between(0, 10), 'flow'] = pd.NA
+    df.loc[~df['fdo2'].between(0, 100), 'fdo2'] = pd.NA
+    return df
 
-    # Value cutoffs -- should this be here or project specific?
-    ecmo_final = ecmo_wider_cleaned
-    ecmo_final.loc[~ecmo_final['sweep'].between(0, 15), 'sweep'] = pd.NA
-    ecmo_final.loc[~ecmo_final['flow'].between(0, 10), 'flow'] = pd.NA
-    ecmo_final.loc[~ecmo_final['fdo2'].between(0, 100), 'fdo2'] = pd.NA
-
+@tag(property="final")
+def reordered(outliers_removed: pd.DataFrame) -> pd.DataFrame:
     column_order = [
         'hospitalization_id', 'recorded_dttm', 'device_name', 'device_category',
         'mcs_category', 'side', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdo2'
     ]
-
     # Reorder the DataFrame
-    ecmo_final = ecmo_final[column_order]
+    return outliers_removed[column_order]
 
-    save_to_rclif(ecmo_final, "ecmo_mcs")
+@tag(property="test")
+def schema_tested(reordered: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
+    try:
+        CLIF_ECMO_SCHEMA.validate(reordered, lazy=True)
+        return True
+    except pa.errors.SchemaErrors as exc:
+        logging.error(json.dumps(exc.message, indent=2))
+        logging.error("Schema errors and failure cases:")
+        logging.error(exc.failure_cases)
+        logging.error("\nDataFrame object that failed validation:")
+        logging.error(exc.data)
+        return exc
+
+@datasaver()
+def save(reordered: pd.DataFrame) -> dict:
+    logging.info("saving to rclif...")
+    save_to_rclif(reordered, "ecmo_mcs")
+    
+    metadata = {
+        "table_name": "ecmo_mcs"
+    }
+    
     logging.info("output saved to a parquet file, everything completed for the ecmo_mcs table!")
+    return metadata
+
+def _main():
+    logging.info("starting to build clif ecmo_mcs table -- ")
+    from hamilton import driver
+    import src.tables.ecmo_mcs as ecmo_mcs
+    setup_logging()
+    dr = (
+        driver.Builder()
+        .with_modules(ecmo_mcs)
+        # .with_cache()
+        .build()
+    )
+    dr.execute(["save"])
+
+def _test():
+    logging.info("testing all...")
+    from hamilton import driver
+    import src.tables.ecmo_mcs as ecmo_mcs
+    setup_logging()
+    dr = (
+        driver.Builder()
+        .with_modules(ecmo_mcs)
+        .build()
+    )
+    all_nodes = dr.list_available_variables()
+    test_nodes = [node.name for node in all_nodes if 'test' == node.tags.get('property')]
+    output = dr.execute(test_nodes)
+    print(output)
+    return output
 
 if __name__ == "__main__":
-    main()
-
-
-
-
-
+    _main()
