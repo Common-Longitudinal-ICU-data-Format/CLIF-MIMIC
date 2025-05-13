@@ -23,7 +23,7 @@ CLIF_ECMO_SCHEMA = pa.DataFrameSchema(
         "recorded_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False),
         "device_name": pa.Column(pa.String, nullable=True),
         "device_category": pa.Column(pa.String, nullable=True),
-        "mcs_category": pa.Column(pa.String, nullable=True), # check whether it should be mcs_group instead
+        "mcs_group": pa.Column(pa.String, nullable=True), # check whether it should be mcs_group instead
         "side": pa.Column(pa.String,  nullable=True, checks=[pa.Check.isin(["left", "right", "both", None])]),
         "device_metric_name": pa.Column(pa.String, nullable=True),
         "device_rate": pa.Column(pa.Float32, nullable=True),
@@ -66,9 +66,9 @@ def ecmo_events_cleaned(duplicates_removed: pd.DataFrame) -> pd.DataFrame:
     # hard coded this because for some reason all the Heartmate devices weren't listed in the "category" column
     df.loc[df['label'].str.contains('HM II', na=False), 'category'] = 'HM II'
 
-    # hard coding mcs_category based on the labels for different measurements (flow, speed, etc.) - based on Curt's guidance. 
+    # hard coding mcs_group based on the labels for different measurements (flow, speed, etc.) - based on Curt's guidance. 
     # This could probably be converted to a second mcide--I think that is how the respiratory support table does it?
-    df['mcs_category'] = df['label'].apply(
+    df['mcs_group'] = df['label'].apply(
         lambda x: 'ECMO' if 'ECMO' in x else 
                 'LVAD' if 'LVAD' in x else 
                 'RVAD' if 'RVAD' in x else 
@@ -81,24 +81,24 @@ def ecmo_events_cleaned(duplicates_removed: pd.DataFrame) -> pd.DataFrame:
                 'LVAD' if 'Left Ventricular Assit Device Flow' in x else 
                 'RVAD' if 'Right Ventricular Assist Device Flow' in x else pd.NA
     )
-    # Fill mcs_category with 'LVAD' where value is '2.5 / CP' and mcs_category is NA - based on Curt's guidance
+    # Fill mcs_group with 'LVAD' where value is '2.5 / CP' and mcs_group is NA - based on Curt's guidance
     df.loc[
-        (df['value'] == '2.5 / CP') & (df['mcs_category'].isna()),
-        'mcs_category'
+        (df['value'] == '2.5 / CP') & (df['mcs_group'].isna()),
+        'mcs_group'
     ] = 'LVAD'
 
-    # Fill mcs_category with 'RVAD' where value is 'RP' and mcs_category is NA - based on Curt's guidance
+    # Fill mcs_group with 'RVAD' where value is 'RP' and mcs_group is NA - based on Curt's guidance
     df.loc[
-        (df['value'] == 'RP') & (df['mcs_category'].isna()),
-        'mcs_category'
+        (df['value'] == 'RP') & (df['mcs_group'].isna()),
+        'mcs_group'
     ] = 'RVAD'
 
     df['device_metric_name'] = df['category'].apply(lambda x: 'Performance Level' if isinstance(x, str) and 'Impella' in x else 'RPM')
-    return df[["hadm_id", "time", 'category', 'mcs_category', 'device_metric_name', "itemid", "value"]]
+    return df[["hadm_id", "time", 'category', 'mcs_group', 'device_metric_name', "itemid", "value"]]
 
 def pivoted_wider(ecmo_events_cleaned: pd.DataFrame) -> pd.DataFrame:
     df = ecmo_events_cleaned.pivot(
-        index = ["hadm_id", "time", 'category', 'mcs_category', 'device_metric_name'], 
+        index = ["hadm_id", "time", 'category', 'mcs_group', 'device_metric_name'], 
         columns = ["itemid"],
         values = ["value"]
     ).reset_index()
@@ -106,7 +106,7 @@ def pivoted_wider(ecmo_events_cleaned: pd.DataFrame) -> pd.DataFrame:
 
 def coalesced(pivoted_wider: pd.DataFrame) -> pd.DataFrame:
     df = pivoted_wider
-    df.columns = ['hospitalization_id', 'recorded_dttm', 'device_category', 'mcs_category', 'device_metric_name',
+    df.columns = ['hospitalization_id', 'recorded_dttm', 'device_category', 'mcs_group', 'device_metric_name',
                              '220125', '220128', '228154', '228156', '228192', '228195', '228198', '228873', 
                              '228874', '229254', '229255', '229262', '229263', '229268', '229270','229277', '229278','229280', 
                              '229303', '229304', '229675', '229679', '229823', '229829', '229841', '229842', '229845',
@@ -122,7 +122,7 @@ def coalesced(pivoted_wider: pd.DataFrame) -> pd.DataFrame:
 
 def cleaned(coalesced: pd.DataFrame) -> pd.DataFrame:
     logging.info("cleaning up column names and data types...")
-    df = coalesced.loc[:, ['hospitalization_id', 'recorded_dttm', 'device_name', 'device_category', 'mcs_category', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdo2']]
+    df = coalesced.loc[:, ['hospitalization_id', 'recorded_dttm', 'device_name', 'device_category', 'mcs_group', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdo2']]
     df['flow'] = df['flow'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
     df['sweep'] = df['sweep'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
 
@@ -136,29 +136,29 @@ def cleaned(coalesced: pd.DataFrame) -> pd.DataFrame:
     df.loc[df['device_category'] == 'HM II', 'device_name'] = 'HM II'
     df.loc[df['device_category'] == 'HM II', 'device_category'] = 'HeartMate'
 
-    df.loc[df['mcs_category'].isna() & (df['device_category'] == 'ECMO'), 'mcs_category'] = 'ECMO'
+    df.loc[df['mcs_group'].isna() & (df['device_category'] == 'ECMO'), 'mcs_group'] = 'ECMO'
     df.loc[df['device_category'].isna(), 'device_category'] = 'Other'
 
     df = df.drop_duplicates()
     df.loc[df['device_rate'].isna(), 'device_metric_name'] = pd.NA
 
-    ## NOTE: a possible test here could be crosstabs of device_name and device_category and device_category and mcs_category to make sure everything is mapped correctly
+    ## NOTE: a possible test here could be crosstabs of device_name and device_category and device_category and mcs_group to make sure everything is mapped correctly
     return df
 
 def side(cleaned: pd.DataFrame) -> pd.Series:
     df = cleaned
     # Define conditions for defining "side"
     conditions = [
-        df['mcs_category'] == 'LVAD',
-        df['mcs_category'] == 'RVAD',
-        (df['mcs_category'] == 'ECMO') & (df['device_name'] == 'VV'),
-        (df['mcs_category'] == 'ECMO') & (df['device_name'].isin(['VA', 'VAV']))
+        df['mcs_group'] == 'LVAD',
+        df['mcs_group'] == 'RVAD',
+        (df['mcs_group'] == 'ECMO') & (df['device_name'] == 'VV'),
+        (df['mcs_group'] == 'ECMO') & (df['device_name'].isin(['VA', 'VAV']))
     ]
 
     # Define corresponding values
     choices = ['left', 'right', 'right', 'both']
 
-    ## NOTE: a possible test here could be crosstabs of mcs_category and side to make sure everything is mapped correctly
+    ## NOTE: a possible test here could be crosstabs of mcs_group and side to make sure everything is mapped correctly
     
     # Create 'side' column
     return np.select(conditions, choices, default=None)
@@ -188,7 +188,7 @@ def outliers_removed(recast: pd.DataFrame) -> pd.DataFrame:
 def reordered(outliers_removed: pd.DataFrame) -> pd.DataFrame:
     column_order = [
         'hospitalization_id', 'recorded_dttm', 'device_name', 'device_category',
-        'mcs_category', 'side', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdo2'
+        'mcs_group', 'side', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdo2'
     ]
     # Reorder the DataFrame
     return outliers_removed[column_order]
