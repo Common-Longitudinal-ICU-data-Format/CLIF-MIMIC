@@ -1,6 +1,6 @@
 # MIMIC-IV to CLIF ETL Pipeline
 
-This repository provides the ETL pipeline to transform the MIMIC-IV database into the Common Longitudinal ICU data Format (CLIF). The latest release is [v0.1.0](CHANGELOG.md#latest-v010---2025-05-01), released in April 2025, and transforms [MIMIC-IV 3.1](https://physionet.org/content/mimiciv/3.1/) into [CLIF 2.0.0](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.0.0.html). 
+This repository provides the ETL pipeline to transform the MIMIC-IV database into the Common Longitudinal ICU data Format (CLIF). The latest release is [v0.2.0](CHANGELOG.md#latest-v020---2025-05-13), released in May 2025, and transforms [MIMIC-IV 3.1](https://physionet.org/content/mimiciv/3.1/) into [CLIF 2.1.0](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.1.0.html). 
 
 
 #### Table of contents
@@ -10,7 +10,7 @@ This repository provides the ETL pipeline to transform the MIMIC-IV database int
 - [License](#license)
 
 ## Usage
-If you are an existing user, please `git pull` the main branch and refer to the [change log](CHANGELOG.md) for the updated CLIF tables that need to be re-generated.
+If you are an existing user, please `git pull` the relevant branch and refer to the [change log](CHANGELOG.md) for the updated CLIF tables that need to be re-generated.
 
 If you are a new user, fork your own copy of this repository, and `git clone` to your local directory. 
 
@@ -62,11 +62,21 @@ The following example shows I have specified two sets of paths corresponding to 
     }
 ```
 
-4. You can also store multiple versions of the CLIF table outputs by customizing `clif_output_dir_name`. If you leave it blank with `""`, the program would default to naming it `f"rclif-{CLIF_VERSION}"`. 
+4. You can also store multiple versions of the CLIF table outputs by customizing `clif_output_dir_name`. If you leave it blank with `""`, the program would default to naming it `f"rclif-{CLIF_VERSION}"`. Using this default is recommended if you want to access and store multiple CLIF versions at the same time. 
 
 ### Run the pipeline
-After you navigated to the project directory, run the following *line by line*:
+After navigating to the project directory, first make sure you are on the correct branch -- which should be `main` if you are using a stable version; or a branch by the corresponding version name, e.g. branch `release/0.2.0`, if you are using a beta version.
 
+To switch to branch `release/0.2.0`, for example, run:
+```sh
+# collect information on all the remote branches available from the Github repo
+git fetch 
+# switch to branch release/0.2.0
+git switch release/0.2.0
+```
+- to double check, you can run `git branch` to check that the intended branch is correctly identified in the highlight of the output.
+
+Then, on the correct branch, run the following *line by line*:
 ```sh
 # create a virtual environment
 python3 -m venv .venv/

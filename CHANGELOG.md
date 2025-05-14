@@ -1,11 +1,27 @@
 # Changelog
 
-| MIMIC version | CLIF version | Status | Latest CLIF-MIMIC release |
+| MIMIC version | CLIF version | Latest CLIF-MIMIC release | Status |
 |------|--------|----------|-----------|  
-| IV-3.1 | [2.1.0](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.1.0.html) | 🚀 |  Arriving soon!   |
-| IV-3.1 | [2.0.0](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.0.0.html)  | ✅ |  [v0.1.0](#latest-v010---2025-05-01)  |
+| IV-3.1 | [2.1.0](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.1.0.html) | [v0.2.0](#latest-v020---2025-05-13)  |  🧪 beta   |
+| IV-3.1 | [2.0.0](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.0.0.html)  | [v0.1.0](#v010---2025-05-01) |  ✅ stable  |
 
-## LATEST! [v0.1.0] - 2025-05-01
+## LATEST! [v0.2.0] - 2025-05-13
+### Readme
+This is a beta release for the latest CLIF 2.1.0 version, which introduces several new tables and data elements. It is in the beta stage because CLIF's 2.1.0 version currently remains WIP (see CLIF's [maturity levels](https://clif-consortium.github.io/website/maturity.html)). As a result, this beta release will live on a separate `release/0.2.0` branch until CLIF 2.1.0 is stablized. 
+
+To access this version, follow the steps in the [README](README.md#run-the-pipeline) to check out the `release/0.2.0` branch. The newly updated tables that need to be regenerated (or generated for the first time) are: `patient`, `hospitalization`, `adt`, `ecmo_mcs`, `crrt_therapy`.
+
+### New
+- add the new [`crrt_therapy`](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.1.0.html#crrt-therapy) table
+- add the new [`ecmo_mcs`](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.1.0.html#ecmo_mcs) table
+- add the new `location_type` field in the `adt` table ([#1](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/1))
+- populate the `language_category` field with newly developed mapping in the in the `patient` table
+- populate the `admission_type_category` field with newly developed mapping in the `hospitalization` table
+
+### Fixed
+- add mcide files locally in the repo to replace directly reading from raw.githubusercontent which may incur a device-specific SSL certificate error for some users ([#15](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/15))
+
+## [v0.1.0] - 2025-05-01
 ### Readme
 This is the last CLIF-MIMIC release for [CLIF's 2.0.0 version](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.0.0.html). It is a major update that introduces new data elements as well as fixes that yield much cleaner data with fewer nulls. 
 
@@ -41,4 +57,4 @@ CLIF tables updated: `respiratory_support`, `patient`
 First release!
 
 ## [Planned]
-- [add](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/1) mapping for `location_type` 
+- add out of hospital death
