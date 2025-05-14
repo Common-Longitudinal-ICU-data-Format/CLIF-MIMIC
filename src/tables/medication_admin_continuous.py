@@ -39,7 +39,9 @@ def drop_shorter_action_name(group):
 
 def _main():
     logging.info("starting to build clif medication_admin_continuous table -- ")
-    mac_mcide_mapping = pd.read_csv(MAC_MCIDE_URL)
+    
+    # mac_mcide_mapping = pd.read_csv(MAC_MCIDE_URL)
+    mac_mcide_mapping = pd.read_csv("data/mcide/clif_medication_admin_continuous_med_categories.csv")
     mac_category_to_group_mapper = dict(zip(
         mac_mcide_mapping['med_category'], mac_mcide_mapping['med_group']
     ))

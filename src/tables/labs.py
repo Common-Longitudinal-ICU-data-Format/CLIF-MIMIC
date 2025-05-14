@@ -27,7 +27,8 @@ from src.utils import (
 from src.utils_qa import all_null_check
 
 def _permitted_lab_categories() -> List[str]:
-    clif_labs_mcide = pd.read_csv("https://raw.githubusercontent.com/Common-Longitudinal-ICU-data-Format/CLIF/refs/heads/main/mCIDE/clif_lab_categories.csv")
+    # clif_labs_mcide = pd.read_csv("https://raw.githubusercontent.com/Common-Longitudinal-ICU-data-Format/CLIF/refs/heads/main/mCIDE/clif_lab_categories.csv")
+    clif_labs_mcide = pd.read_csv("data/mcide/clif_lab_categories.csv")
     return clif_labs_mcide["lab_category"].unique()
 
 CLIF_LABS_SCHEMA = pa.DataFrameSchema(

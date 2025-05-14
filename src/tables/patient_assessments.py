@@ -350,8 +350,9 @@ def sbt_tested(sbt_fetched: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
         return exc
  
 def pa_category_to_group_mapper() -> dict:
-    pa_mcide_url = "https://raw.githubusercontent.com/clif-consortium/CLIF/main/mCIDE/clif_patient_assessment_categories.csv"
-    pa_mcide_mapping = pd.read_csv(pa_mcide_url)
+    # pa_mcide_url = "https://raw.githubusercontent.com/clif-consortium/CLIF/main/mCIDE/clif_patient_assessment_categories.csv"
+    # pa_mcide_mapping = pd.read_csv(pa_mcide_url)
+    pa_mcide_mapping = pd.read_csv("data/mcide/clif_patient_assessment_categories.csv")
     pa_category_to_group_mapper = dict(
         zip(pa_mcide_mapping["assessment_category"], pa_mcide_mapping["assessment_group"]))
     return pa_category_to_group_mapper

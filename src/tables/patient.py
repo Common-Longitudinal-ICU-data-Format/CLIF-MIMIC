@@ -60,8 +60,9 @@ LANGUAGE_MAPPER = {
 }
 
 def _permissible_language_categories():
-    language_df = pd.read_excel("data/data_models/language_category.1.xlsx")
-    return language_df["language_category"].unique()
+    # language_df = pd.read_excel("data/data_models/language_category.1.xlsx")
+    language_mcide = pd.read_csv("data/mcide/clif_patient_language_categories.csv")
+    return language_mcide["language_category"].unique()
 
 PERMISSIBLE_RACE_CATEGORIES = [
     "Black or African American", "White", "American Indian or Alaska Native", 
