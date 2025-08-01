@@ -27,6 +27,7 @@
         "medication_admin_continuous": 1,
         "position": 1,
         "crrt_therapy": 1,
-        "ecmo_mcs": 1
+        "ecmo_mcs": 1,
+        "hospital_diagnosis": 1
     }
 }
