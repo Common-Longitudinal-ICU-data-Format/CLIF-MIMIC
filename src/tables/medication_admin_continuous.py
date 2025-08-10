@@ -28,56 +28,61 @@ MAC_COL_RENAME_MAPPER = {
 
 MAC_MCIDE_URL = "https://raw.githubusercontent.com/clif-consortium/CLIF/main/mCIDE/clif_medication_admin_continuous_med_categories.csv"
 
-def are_doses_close(doses):
+def _are_doses_close(doses):
     return (abs(doses.iloc[0] - doses.iloc[1]) / max(doses.iloc[0], doses.iloc[1])) <= 0.1
 
 # drop the row with the shorter mar_action_name
-def drop_shorter_action_name(group):
-    if len(group) == 2 and are_doses_close(group['med_dose']):
+def _drop_shorter_action_name(group):
+    if len(group) == 2 and _are_doses_close(group['med_dose']):
         return group.loc[[group['mar_action_name'].str.len().idxmax()]]
     return group
+
+def mac_mapping() -> pd.DataFrame:
+    # TODO: the key word will become 'med_admin_cont' in the next update
+    return load_mapping_csv("mac")
+
+def mac_item_ids(mac_mapping) -> pd.Series:
+    logging.info("parsing the mapping files to identify relevant items and fetch corresponding events...")
+    mac_item_ids = get_relevant_item_ids(
+        mapping_df = mac_mapping, 
+        decision_col = "decision", 
+        # i.e. we including "SPECIAL CASE" which means the med can be either continuous or intermittent
+        excluded_labels = ["NO MAPPING", "UNSURE", "MAPPED ELSEWHERE", "NOT AVAILABLE", "TO MAP, ELSEWHERE"]
+        ) 
+    return mac_item_ids
+
+def extracted_mac_events(mac_item_ids) -> pd.DataFrame:
+    '''
+    '''
+    return fetch_mimic_events(mac_item_ids)
+
+def seleceted_and_mapped(extracted_mac_events) -> pd.DataFrame:
+    '''
+    Simplify the columns of the extracted mac_events dataframe.
+    '''
+    pass
+
+def intermittent_removed(extracted_mac_events) -> pd.DataFrame:
+    '''
+    Keep only continuous infusions; remove intermittent administration of the same medication (such as boluses)
+    '''
+    df = extracted_mac_events
+    
+    logging.info("filtering out intermittent events...")
+    return df.query("ordercategoryname != '05-Med Bolus'") \
+        .query("ordercategorydescription != 'Drug Push'") \
 
 def _main():
     logging.info("starting to build clif medication_admin_continuous table -- ")
     
-    # mac_mcide_mapping = pd.read_csv(MAC_MCIDE_URL)
+    # add mapping to med_group
     mac_mcide_mapping = pd.read_csv("data/mcide/clif_medication_admin_continuous_med_categories.csv")
     mac_category_to_group_mapper = dict(zip(
         mac_mcide_mapping['med_category'], mac_mcide_mapping['med_group']
     ))
     # mac_categories = mac_mcide_mapping['med_category'].unique()
-    
-    # find all the items that has these strings in their names, and return the ids:
-    # mac_items = pd.concat([
-    #     search_mimic_items(med_category) for med_category in mac_categories
-    #     ])
-    
-    # mac_items.dropna(subset = "count", inplace = True)
-    # mac_items
-    # mac_items["med_category"] = mac_items["label"].apply(lambda x: map_name_to_category(x, mac_categories))
-    # mac_items
-    # mac_id_to_name_mapper = dict(zip(mac_items["itemid"], mac_items["label"]))
-    # mac_id_to_category_mapper = dict(zip(mac_items["itemid"], mac_items["med_category"]))
-    # mac_ids = mac_items["itemid"].tolist()
-    
-    # load mapping 
-    mac_mapping = load_mapping_csv("mac")
-    mac_mapper = construct_mapper_dict(mac_mapping, "itemid", "med_category")
- 
-    logging.info("parsing the mapping files to identify relevant items and fetch corresponding events...")
-    mac_item_ids = get_relevant_item_ids(
-        mapping_df = mac_mapping, 
-        decision_col = "decision", 
-        excluded_labels = ["NO MAPPING", "UNSURE", "MAPPED ELSEWHERE", "NOT AVAILABLE", "TO MAP, ELSEWHERE"]
-        ) 
-
-    mac_events = fetch_mimic_events(mac_item_ids)
-    # we only need to fetch events for *continuous* meds
-    # so we will have to filter out the events that are not continuous
-    logging.info("filtering out intermittent events...")
-    mac_events = mac_events.query("ordercategoryname != '05-Med Bolus'") \
-        .query("ordercategorydescription != 'Drug Push'") \
-            
+        
+  
     # s stands for simple    
     mac_events_s = mac_events[[
         'subject_id', 'hadm_id', 'starttime',
@@ -86,9 +91,13 @@ def _main():
         'linkorderid', # 'ordercategoryname',
         'totalamount', 'totalamountuom', 'originalamount', 'originalrate', 'label'
         ]].reset_index(drop = True)
+    
     mac_events_s = convert_and_sort_datetime(mac_events_s)
     
+    # drop duplicates
     mac_events_s.drop_duplicates(subset = ["hadm_id", "itemid", "starttime", "rate"], inplace = True) # FIXME
+    
+    # pivot longer and merge the starttime and endtime into a single column
     mac_l = mac_events_s.melt(
         id_vars = [
             "hadm_id", "itemid", "index", "rate", "rateuom", # "amount", "amountuom", 
@@ -140,7 +149,7 @@ def _main():
     mac_dups_d.reset_index(inplace=True)
     # 2. we then move on to remove those dups that are very close in value -- so we are fine dropping either one.
     # group by meds_keycols and apply the function
-    mac_dups_dd = mac_dups_d.groupby(meds_keycols).apply(drop_shorter_action_name).reset_index(drop = True)
+    mac_dups_dd = mac_dups_d.groupby(meds_keycols).apply(_drop_shorter_action_name).reset_index(drop = True)
     meds_didx_2 = pd.Index(
         np.setdiff1d(mac_dups_d["index"], mac_dups_dd["index"])
     )
