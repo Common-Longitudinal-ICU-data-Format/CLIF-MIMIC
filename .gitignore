@@ -8,12 +8,12 @@ CLIF_*/
 data/mimic-data
 data/rclif-*
 data/mappings/.*
-data/test-data
+# data/test-data  # removed - test data now in tests/fixtures/
 start_jupyter.sh
 output/*
 *.parquet
 logs/*
-tests/
+# tests/  # removed - tests should be version controlled
 config/config.json
 
 .hamilton_cache/

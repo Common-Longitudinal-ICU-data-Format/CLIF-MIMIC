@@ -210,8 +210,8 @@ def clif_table_pathfinder(table_name: str) -> str:
 
 def clif_test_data_pathfinder(table_name: str) -> str:
     clif_path = (
-        SCRIPT_DIR / f"../data/test-data/test_{table_name}.csv"
-    ) # e.g. '../data/test-data/test_patient.csv'
+        SCRIPT_DIR / f"../tests/fixtures/test_{table_name}.csv"
+    ) # e.g. '../tests/fixtures/test_patient.csv'
     return str(clif_path)
 
 def save_to_rclif(df: pd.DataFrame, table_name: str):
