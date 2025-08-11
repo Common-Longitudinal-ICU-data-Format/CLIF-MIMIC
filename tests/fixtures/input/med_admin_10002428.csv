@@ -1,0 +1,11 @@
+row_index,subject_id,hadm_id,starttime,endtime,linkorderid,statusdescription,med_category,to_table,rate,rateuom,amount,amountuom,patientweight,ordercategoryname,ordercategorydescription,itemid,label,item_class
+4219310,10002428,28662225,2156/4/22 00:15,2156/4/22 00:45,1771638,ChangeDose/Rate,dextrose,cont,8.064516068,mL/hour,4.032258242,mL,43,01-Drips,Continuous Med,220949,Dextrose 5%,BOTH
+4219311,10002428,28662225,2156/4/22 00:15,2156/4/22 00:45,1771638,ChangeDose/Rate,dopamine,cont,5.001250189,mcg/kg/min,6.451612556,mg,43,01-Drips,Continuous Med,221662,Dopamine,CONTINUOUS
+4219312,10002428,28662225,2156/4/22 00:45,2156/4/22 02:11,1771638,ChangeDose/Rate,dextrose,cont,6.450202942,mL/hour,9.245291054,mL,43,01-Drips,Continuous Med,220949,Dextrose 5%,BOTH
+4219313,10002428,28662225,2156/4/22 00:45,2156/4/22 02:11,1771638,ChangeDose/Rate,dopamine,cont,4.000125919,mcg/kg/min,14.79246484,mg,43,01-Drips,Continuous Med,221662,Dopamine,CONTINUOUS
+4219314,10002428,28662225,2156/4/22 02:11,2156/4/22 05:02,1771638,ChangeDose/Rate,dextrose,cont,8.06092453,mL/hour,22.97363372,mL,43,01-Drips,Continuous Med,220949,Dextrose 5%,BOTH
+4219315,10002428,28662225,2156/4/22 02:11,2156/4/22 05:02,1771638,ChangeDose/Rate,dopamine,cont,4.999022931,mcg/kg/min,36.75781307,mg,43,01-Drips,Continuous Med,221662,Dopamine,CONTINUOUS
+4219316,10002428,28662225,2156/4/22 05:02,2156/4/22 06:08,1771638,ChangeDose/Rate,dextrose,cont,6.447928429,mL/hour,7.092721403,mL,43,01-Drips,Continuous Med,220949,Dextrose 5%,BOTH
+4219317,10002428,28662225,2156/4/22 05:02,2156/4/22 06:08,1771638,ChangeDose/Rate,dopamine,cont,3.99871543,mcg/kg/min,11.34835368,mg,43,01-Drips,Continuous Med,221662,Dopamine,CONTINUOUS
+4219318,10002428,28662225,2156/4/22 06:08,2156/4/22 07:38,1771638,Paused,dextrose,cont,4.83594656,mL/hour,7.253919616,mL,43,01-Drips,Continuous Med,220949,Dextrose 5%,BOTH
+4219319,10002428,28662225,2156/4/22 06:08,2156/4/22 07:38,1771638,Paused,dopamine,cont,2.999036573,mcg/kg/min,11.60627147,mg,43,01-Drips,Continuous Med,221662,Dopamine,CONTINUOUS
