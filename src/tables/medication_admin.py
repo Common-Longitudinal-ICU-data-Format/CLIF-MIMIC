@@ -1,10 +1,12 @@
-# src/tables/medication_admin_continuous.py
+# src/tables/medication_admin.py
 import numpy as np
 import pandas as pd
 import logging
+import duckdb
 from importlib import reload
+from typing import Literal
 import src.utils
-reload(src.utils)
+# reload(src.utils)
 from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_csv, \
     get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
     convert_and_sort_datetime, setup_logging, search_mimic_items, convert_tz_to_utc
@@ -56,7 +58,62 @@ def extracted_mac_events(mac_item_ids) -> pd.DataFrame:
     '''
     return fetch_mimic_events(mac_item_ids)
 
-def seleceted_and_mapped(extracted_mac_events) -> pd.DataFrame:
+def _prepare_for_timestamp_linearization(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Prepare the dataframe for timestamp linearization by creating lead and lag.
+    """
+    query = f"""
+    SELECT subject_id, hadm_id
+        , linkorderid
+        , starttime, endtime 
+        , LEAD(starttime) OVER (PARTITION BY hadm_id, linkorderid, med_category ORDER BY starttime) AS starttime_next
+        , ROW_NUMBER() OVER (PARTITION BY hadm_id, linkorderid, med_category ORDER BY starttime) AS rn
+        , starttime = MIN(starttime) OVER (PARTITION BY hadm_id, linkorderid, med_category) AS is_first_row
+        , starttime = MAX(starttime) OVER (PARTITION BY hadm_id, linkorderid, med_category) AS is_last_row
+        , statusdescription
+        , LAG(statusdescription) OVER (PARTITION BY hadm_id, linkorderid, med_category ORDER BY starttime) AS statusdescription_prev
+        , med_category
+        , to_table
+        , rate, rateuom
+        , amount, amountuom
+        , patientweight
+        --, totalamount, totalamountuom, originalamount, originalrate
+        , ordercategoryname, ordercategorydescription
+        , itemid
+        , label
+        , item_class
+    FROM df
+    ORDER BY hadm_id, linkorderid, med_category, starttime, endtime
+    """
+    return duckdb.sql(query).df()
+
+def _linearize_timestamps(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
+    query = f"""
+    SELECT hadm_id as hospitalization_id
+        , linkorderid as med_order_id
+        , label as med_name
+        , med_category
+        , starttime AS admin_dttm
+        , CASE WHEN is_first_row = 1 THEN 'start' ELSE statusdescription_prev END AS mar_action_name
+        , {dose_name} AS med_dose
+        , {dose_name}uom as med_dose_unit
+    FROM df
+    UNION ALL
+    SELECT hadm_id as hospitalization_id
+        , linkorderid as med_order_id
+        , label as med_name
+        , med_category
+        , endtime AS admin_dttm
+        , statusdescription AS mar_action_name
+        , 0 AS med_dose
+        , {dose_name}uom as med_dose_unit
+    FROM df
+    WHERE is_last_row = 1 
+    ORDER BY hadm_id, linkorderid, med_category, admin_dttm
+    """
+    return duckdb.sql(query).df()
+
+def selected_and_mapped(extracted_mac_events) -> pd.DataFrame:
     '''
     Simplify the columns of the extracted mac_events dataframe.
     '''
