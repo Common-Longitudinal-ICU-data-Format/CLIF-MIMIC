@@ -93,6 +93,35 @@ def _prepare_for_timestamp_flattening(df: pd.DataFrame) -> pd.DataFrame:
 
 def _flatten_timestamps(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
     query = f"""
+    WITH l as (
+        SELECT hadm_id, linkorderid, med_category, starttime, rate, rateuom
+        FROM df -- WHERE linkorderid in (294375, 1771638)
+    ), r as (
+        SELECT hadm_id, linkorderid, med_category, endtime, statusdescription, rate, rateuom
+        FROM df -- WHERE linkorderid in (294375, 1771638)
+    )
+    SELECT COALESCE(l.hadm_id, r.hadm_id) AS hadm_id
+        , COALESCE(l.linkorderid, r.linkorderid) AS linkorderid
+        , COALESCE(l.med_category, r.med_category) AS med_category
+        , COALESCE(l.starttime, r.endtime) AS admin_dttm
+        , l.starttime, r.endtime
+        , r.statusdescription as mar_action_name
+        , l.rate, r.rate
+        --, COALESCE(l.rate, r.rate) AS med_dose
+        --, COALESCE(l.rateuom, r.rateuom) AS med_dose_unit
+    FROM l
+    FULL JOIN r
+    ON l.hadm_id = r.hadm_id
+        AND l.linkorderid = r.linkorderid
+        AND l.med_category = r.med_category
+        AND l.starttime = r.endtime
+    ORDER BY hadm_id, linkorderid, med_category, admin_dttm
+    """
+    return duckdb.sql(query).df()
+
+
+def _flatten_timestamps_v1(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
+    query = f"""
     SELECT hadm_id as hospitalization_id
         , linkorderid as med_order_id
         , label as med_name
