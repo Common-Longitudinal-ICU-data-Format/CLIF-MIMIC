@@ -1,0 +1,13 @@
+hospitalization_id,med_order_id,admin_dttm,med_category,med_route_name,med_dose,med_dose_unit,mar_action_name
+28662225,1771638,2156/4/22 0:15,dextrose,01-Drips,8.064516068,mL/hour,start
+28662225,1771638,2156/4/22 0:45,dextrose,01-Drips,6.450202942,mL/hour,ChangeDose/Rate
+28662225,1771638,2156/4/22 2:11,dextrose,01-Drips,8.06092453,mL/hour,ChangeDose/Rate
+28662225,1771638,2156/4/22 5:02,dextrose,01-Drips,6.447928429,mL/hour,ChangeDose/Rate
+28662225,1771638,2156/4/22 6:08,dextrose,01-Drips,4.83594656,mL/hour,ChangeDose/Rate
+28662225,1771638,2156/4/22 7:38,dextrose,01-Drips,0,mL/hour,Paused
+28662225,1771638,2156/4/22 0:15,dopamine,01-Drips,5.001250189,mcg/kg/min,start
+28662225,1771638,2156/4/22 0:45,dopamine,01-Drips,4.000125919,mcg/kg/min,ChangeDose/Rate
+28662225,1771638,2156/4/22 2:11,dopamine,01-Drips,4.999022931,mcg/kg/min,ChangeDose/Rate
+28662225,1771638,2156/4/22 5:02,dopamine,01-Drips,3.99871543,mcg/kg/min,ChangeDose/Rate
+28662225,1771638,2156/4/22 6:08,dopamine,01-Drips,2.999036573,mcg/kg/min,ChangeDose/Rate
+28662225,1771638,2156/4/22 7:38,dopamine,01-Drips,0,mcg/kg/min,Paused
