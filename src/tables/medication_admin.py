@@ -58,9 +58,9 @@ def extracted_mac_events(mac_item_ids) -> pd.DataFrame:
     '''
     return fetch_mimic_events(mac_item_ids)
 
-def _prepare_for_timestamp_linearization(df: pd.DataFrame) -> pd.DataFrame:
+def _prepare_for_timestamp_flattening(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Prepare the dataframe for timestamp linearization by creating lead and lag.
+    Prepare the dataframe for timestamp flattening by creating lead and lag.
     """
     query = f"""
     SELECT subject_id, hadm_id
@@ -74,7 +74,11 @@ def _prepare_for_timestamp_linearization(df: pd.DataFrame) -> pd.DataFrame:
         , LAG(statusdescription) OVER (PARTITION BY hadm_id, linkorderid, med_category ORDER BY starttime) AS statusdescription_prev
         , med_category
         , to_table
-        , rate, rateuom
+        , EXTRACT(EPOCH FROM (endtime - starttime)) / 60 AS duration_in_mins
+        , amount / duration_in_mins AS rate_imputed
+        , CONCAT(amountuom, '/min') AS rateuom_imputed
+        , COALESCE(rate, rate_imputed) AS rate
+        , COALESCE(rateuom, rateuom_imputed) AS rateuom
         , amount, amountuom
         , patientweight
         --, totalamount, totalamountuom, originalamount, originalrate
@@ -87,7 +91,7 @@ def _prepare_for_timestamp_linearization(df: pd.DataFrame) -> pd.DataFrame:
     """
     return duckdb.sql(query).df()
 
-def _linearize_timestamps(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
+def _flatten_timestamps(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
     query = f"""
     SELECT hadm_id as hospitalization_id
         , linkorderid as med_order_id
