@@ -60,6 +60,7 @@ def extracted_mac_events(mac_item_ids) -> pd.DataFrame:
 
 def _prepare_for_timestamp_flattening(df: pd.DataFrame) -> pd.DataFrame:
     """
+    [LIKELY DEPRECATED]
     Prepare the dataframe for timestamp flattening by creating lead and lag.
     """
     query = f"""
@@ -91,22 +92,44 @@ def _prepare_for_timestamp_flattening(df: pd.DataFrame) -> pd.DataFrame:
     """
     return duckdb.sql(query).df()
 
-def _flatten_timestamps(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
+def _remove_crossovers(df: pd.DataFrame) -> pd.DataFrame:
+    q = """
+    SELECT *
+        , LAG(endtime) OVER (PARTITION BY hadm_id, med_category, linkorderid ORDER BY starttime) AS endtime_prev
+        , starttime < endtime_prev AS crossover
+    FROM df
+    QUALIFY crossover is False
+    -- ORDER BY hadm_id, med_category, starttime, endtime, linkorderid
+    ORDER BY hadm_id, starttime, endtime, linkorderid, med_category
+    """
+    crossovers = duckdb.sql(q).df()
+    print(f"given there are only {len(crossovers)} cases, we might consider dropping them all")
+
+def _flatten_timestamps_staging(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
     query = f"""
-    WITH l as (
-        SELECT hadm_id, linkorderid, med_category, starttime, statusdescription, rate, rateuom
-        FROM df WHERE linkorderid in (294375, 1771638)
+    WITH t1 as (
+        SELECT *
+            , starttime = MIN(starttime) OVER (PARTITION BY hadm_id, linkorderid, med_category) AS is_first_row
+            , starttime = MAX(starttime) OVER (PARTITION BY hadm_id, linkorderid, med_category) AS is_last_row
+        FROM df
+    ), l as (
+        SELECT subject_id, hadm_id, linkorderid, med_category, starttime, statusdescription, rate, rateuom
+        FROM t1 -- WHERE linkorderid in (294375, 1771638)
     ), r as (
-        SELECT hadm_id, linkorderid, med_category, endtime, statusdescription, rate, rateuom
-        FROM df WHERE linkorderid in (294375, 1771638)
+        SELECT subject_id, hadm_id, linkorderid, med_category, endtime, statusdescription, rate, rateuom
+        FROM t1 -- WHERE linkorderid in (294375, 1771638)
     )
-    SELECT COALESCE(l.hadm_id, r.hadm_id) AS hadm_id
-        , COALESCE(l.linkorderid, r.linkorderid) AS linkorderid
-        , COALESCE(l.med_category, r.med_category) AS med_category
+    -- the base table after full join
+    SELECT COALESCE(l.subject_id, r.subject_id) AS patient_id
+        , COALESCE(l.hadm_id, r.hadm_id) AS hospitalization_id
+        , COALESCE(l.linkorderid, r.linkorderid) AS med_order_id
+        , COALESCE(l.med_category, r.med_category) AS _med_category
         , COALESCE(l.starttime, r.endtime) AS admin_dttm
         , l.starttime, r.endtime
-        -- , l.statusdescription
-        , r.statusdescription as mar_action_name
+        , admin_dttm = MIN(admin_dttm) OVER (PARTITION BY hospitalization_id, med_order_id, _med_category) AS is_first_row
+        , admin_dttm = MAX(admin_dttm) OVER (PARTITION BY hospitalization_id, med_order_id, _med_category) AS is_last_row
+        , CASE WHEN is_first_row = 1 THEN COALESCE(r.statusdescription, '[Started]')
+            ELSE COALESCE(r.statusdescription, '[Restarted]') END as mar_action_name
         , l.rate as med_dose
         , l.rateuom as med_dose_unit
     FROM l
@@ -115,10 +138,47 @@ def _flatten_timestamps(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) 
         AND l.linkorderid = r.linkorderid
         AND l.med_category = r.med_category
         AND l.starttime = r.endtime
-    ORDER BY hadm_id, linkorderid, med_category, admin_dttm
+        AND l.subject_id = r.subject_id
+    ORDER BY patient_id, hospitalization_id, med_order_id, _med_category, admin_dttm
     """
     return duckdb.sql(query).df()
 
+def _flatten_timestamps(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
+    """after staging. """
+    
+    query = f"""
+    -- the additional Starting rows for 'Paused' and 'FinishedRunning' to be joined back
+    WITH t1 as (
+        SELECT patient_id, hospitalization_id, med_order_id, _med_category as med_category
+            , admin_dttm, starttime, endtime, '[Restarted]' as mar_action_name
+            , med_dose
+            , med_dose_unit
+        FROM df
+        WHERE mar_action_name in ('Paused', 'FinishedRunning') 
+            AND med_dose IS NOT NULL
+    ), t2 as (
+        SELECT patient_id, hospitalization_id, med_order_id, _med_category as med_category
+            , admin_dttm, starttime, endtime, mar_action_name
+            , med_dose
+            , med_dose_unit
+        FROM df
+        UNION 
+        SELECT * FROM t1
+        ORDER BY patient_id, hospitalization_id, med_order_id, med_category, admin_dttm
+    )
+    SELECT -- patient_id, 
+        hospitalization_id, med_order_id, med_category
+        , admin_dttm --, starttime, endtime
+        , mar_action_name
+        , med_dose: COALESCE(med_dose, 0)
+        , med_dose_unit: LAST_VALUE(med_dose_unit IGNORE NULLS) OVER (
+            PARTITION BY hospitalization_id, med_order_id, med_category 
+            ORDER BY admin_dttm
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+            )
+    FROM t2
+    """
+    return duckdb.sql(query).df()
 
 def _flatten_timestamps_v1(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
     query = f"""
