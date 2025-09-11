@@ -109,8 +109,10 @@ def _flatten_timestamps_staging(df: pd.DataFrame, dose_name: Literal["rate", "am
     query = f"""
     WITH t1 as (
         SELECT *
-            , starttime = MIN(starttime) OVER (PARTITION BY hadm_id, linkorderid, med_category) AS is_first_row
-            , starttime = MAX(starttime) OVER (PARTITION BY hadm_id, linkorderid, med_category) AS is_last_row
+            , amount / duration_in_mins AS rate_imputed
+            , CONCAT(amountuom, '/min') AS rateuom_imputed
+            , COALESCE(rate, rate_imputed) AS rate
+            , COALESCE(rateuom, rateuom_imputed) AS rateuom
         FROM df
     ), l as (
         SELECT subject_id, hadm_id, linkorderid, med_category, starttime, statusdescription, rate, rateuom
