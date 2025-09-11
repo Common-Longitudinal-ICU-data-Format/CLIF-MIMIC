@@ -708,6 +708,7 @@ def search_mimic_items(kw, col: str = "label", case_sensitive: bool = False, for
     '''
     Search for items by keyword in the `d_items` table.
     '''
+    logging.info("--------------------------------")
     logging.info(f"searching for items with keyword '{kw}' in column '{col}' with case sensitive = {case_sensitive}.")
     kw_condition = f"{col} {'LIKE' if case_sensitive else 'ILIKE'} '%{kw}%'"
     query = f"""
@@ -719,24 +720,25 @@ def search_mimic_items(kw, col: str = "label", case_sensitive: bool = False, for
     # check if there is any match
     if len(df) == 0:
         logging.warning(f"No match for '{kw}' in column '{col}' with case sensitive = {case_sensitive}.")
-        return pd.DataFrame()
-    eventtable_to_itemids_mapper = df.groupby("linksto")["itemid"].apply(list).to_dict()
-    logging.info(
-        f"identified {len(eventtable_to_itemids_mapper)} event tables to be separately queried: {list(eventtable_to_itemids_mapper.keys())}"
-    )
-    df_list = [
-        generate_item_stats_by_eventtable(item_ids, table_name)
-        for table_name, item_ids in eventtable_to_itemids_mapper.items()
-    ]
-    df_m = pd.concat(df_list).sort_values(by="count", ascending=False)
-    df_m["kw"] = kw
-    # move the kw column to the front
-    df_m = df_m[["kw"] + [col for col in df_m.columns if col != "kw"]]
-        
-    logging.info(
-        f"Found and concatenated {len(df_m)} items from across {len(eventtable_to_itemids_mapper)} event table(s)"
-    )
-    return df_m
+        return pd.DataFrame({"kw": [kw]})
+    else:
+        eventtable_to_itemids_mapper = df.groupby("linksto")["itemid"].apply(list).to_dict()
+        logging.info(
+            f"identified {len(eventtable_to_itemids_mapper)} event tables to be separately queried: {list(eventtable_to_itemids_mapper.keys())}"
+        )
+        df_list = [
+            generate_item_stats_by_eventtable(item_ids, table_name)
+            for table_name, item_ids in eventtable_to_itemids_mapper.items()
+        ]
+        df_m = pd.concat(df_list).sort_values(by="count", ascending=False)
+        df_m["kw"] = kw
+        # move the kw column to the front
+        df_m = df_m[["kw"] + [col for col in df_m.columns if col != "kw"]]
+            
+        logging.info(
+            f"Found and concatenated {len(df_m)} items from across {len(eventtable_to_itemids_mapper)} event table(s)"
+        )
+        return df_m
 
 class ItemFinder:
     """
