@@ -1,0 +1,328 @@
+---
+title: "micro_culture_cleaning"
+output: html_document
+date: "2025-08-06"
+---
+
+```{r}
+library(doParallel) 
+library(dplyr)
+library(haven) 
+library(tidyverse) 
+library(readxl)
+
+
+cl <- makePSOCKcluster(12)
+registerDoParallel(cl)
+num_workers <- getDoParWorkers()
+cat("Number of registered workers: ", num_workers, "\n")
+
+data <- read.csv("C:/Users/kbuell/Documents/CLIF/ETL/micro_culture/CLIF20_microbiology_culture.csv")
+data
+
+```
+
+#reformat names, dates and lower all 
+```{r}
+data_v2 <- data %>%
+  rename(lab_order_dttm = order_dttm, 
+         lab_collect_dttm = collect_dttm, 
+         lab_result_dttm = result_dttm,
+         method_name = component_name,
+         micro_order_name = order_display_name,
+         organism_name = org_name,
+         result_flag = ResultFlag)  %>% 
+  mutate(method_category = NA_real_,
+         fluid_category = NA_real_) %>% 
+  relocate(method_category, .after = method_name) %>%
+  relocate(fluid_category, .after = fluid_name) %>% 
+  mutate(micro_order_name = tolower(micro_order_name),
+         fluid_name = tolower(fluid_name),
+         method_name = tolower(method_name),
+         organism_name = tolower(organism_name),
+         antibiotic = tolower(antibiotic),
+         susceptibility = tolower(susceptibility),
+         sens_lab_status = tolower(sens_lab_status))
+         
+data_v3 <- data_v2 %>%
+   mutate(across(c(lab_order_dttm, lab_collect_dttm, lab_result_dttm), ~ as.POSIXct(., format = "%Y-%m-%d %H:%M:%S", tz = "UTC")))
+    
+```
+
+#clean organism category 
+```{r}
+organism_ontology_table <- read_excel("C:/Users/kbuell/Documents/CLIF/ETL/micro_culture/organism_name_ontology_v16.xlsx") %>% 
+  distinct() %>% 
+  rename(
+    organism_group = organism_category,
+    organism_category= organism_name,
+    organism_name = result_name)
+
+organism_ontology_table
+         
+#before using the table, make sure that there are double mappings. Both outputs should be 0
+organism_ontology_table %>% 
+group_by(organism_name) %>%
+  summarize(n_unique = n_distinct(organism_category)) %>%
+  filter(n_unique > 1) %>% 
+  nrow()
+
+organism_ontology_table %>% 
+group_by(organism_name) %>%
+  summarize(n_unique = n_distinct(organism_name)) %>%
+  filter(n_unique > 1) %>% 
+  nrow()
+
+#left bind in ontology table 
+data_v4 <- left_join(data_v3, organism_ontology_table, by = "organism_name")  %>% 
+  relocate(organism_category, .after = organism_name) %>%
+  relocate(organism_group, .after = organism_category) 
+
+#check for missingness 
+data_v4 %>% filter(is.na(organism_category)) %>% 
+  count(organism_category) %>% 
+  arrange(desc(n))
+
+#organism name, category, group mapping for RUSH
+data_v4 %>% 
+  count(organism_name, organism_category, organism_group) %>% 
+  arrange(desc(n))
+```
+# clean method category
+```{r}
+#evaluate strings
+data_v4 %>% count(method_name) %>% arrange(desc(n))
+
+#grepl for categories
+data_v5 <- data_v4 %>%
+  mutate(method_category = case_when(
+    grepl("cult", method_name, ignore.case = TRUE) ~ "culture",
+    grepl("stain", method_name, ignore.case = TRUE) ~ "gram stain",
+    grepl("smear", method_name, ignore.case = TRUE) ~ "smear",
+    #grepl("malaria", component_name, ignore.case = TRUE) ~ "smear",
+    TRUE ~ NA_character_)) %>%
+  mutate(method_category = factor(method_category)) %>% 
+  relocate(method_category, .after = method_name) 
+
+#check for missingness 
+data_v5 %>% filter(is.na(method_category)) %>% 
+  count(method_name) %>% 
+  arrange(desc(n))
+
+#method name, category mapping for RUSH
+data_v5 %>%  count(method_name, method_category) %>% arrange(desc(n)) 
+
+```
+# clean fluid category
+```{r}
+#examine strings for fluid name
+data_v5 %>% count(micro_order_name, fluid_name) %>% arrange(desc(n))
+data_v5 %>% count(fluid_name) %>% arrange(desc(n))
+
+#grepl in fluid names
+data_v6 <- data_v5 %>%
+  mutate(
+    fluid_category = case_when(
+      grepl("brain", fluid_name, ignore.case = TRUE) ~ "brain",
+      grepl("blood", fluid_name, ignore.case = TRUE) ~ "blood/buffy coat",
+      grepl("marrow", fluid_name, ignore.case = TRUE) ~ "bone marrow",
+      grepl("bone|skull flap|vertebra|disc, ", fluid_name, ignore.case = TRUE) ~ "bone cortex (osteomyelitis)", 
+      grepl("aortic|mitral|tricuspid|pericardial|pericardium|vegetation|vegetations|leaflet|leaflets|endocarditis|endocardial|endocardium|myocardium|heart", fluid_name, ignore.case = TRUE) ~ "cardiac (endocardium, myocardium, pericardium)",
+      grepl("\\btip\\b|\\bwire\\b|\\blead\\b|generator", fluid_name, ignore.case = TRUE) ~ "catheter tip", 
+      grepl("auricular|\\bear\\b|\\bears\\b", fluid_name, ignore.case = TRUE) ~ "ears",
+      grepl("esophagus|esophageal|esophogeal|oesophagus|oesophageal", fluid_name, ignore.case = TRUE) ~ "esophagus",
+      grepl("conjunctiva|conjunctival|cornea|corneal|vitreous|right eye|left eye|\\beye\\b|\\beyes\\b|supraorbital|infraorbital|orbital|lacrimal gland|lens", fluid_name, ignore.case = TRUE) ~ "eyes",
+      grepl("stool|feces|faeces|faecal|fecal|rectal swab", fluid_name, ignore.case = TRUE) ~ "feces/stool",
+      grepl("bile|bilious|biliary|bilary|bile drain|\\bchole\\b|chole drain|cholecystectomy drain|choletube|cholecystostomy|cholecystosotmy|gallbladder|gall bladder|galbladder|gallblader|galblader|\\bgb\\|pancreas|pancritic|pancreatic|peripancreatic|peripancreatric", fluid_name, ignore.case = TRUE) ~ "gallbladder and billary tree (not hepatitis), pancreas",
+      grepl("abdominal fluid|fluid, abdominal", fluid_name, ignore.case = TRUE) ~ "gastrointestinal tract unspecified",
+      grepl("genital|scrotum|scrotal|\\blabia\\b|\\bvulva\\b|penile|pennile|pennis|penis|urethral|perineum|urethra|foreskin", fluid_name, ignore.case = TRUE) ~ "genital area",
+      grepl("kidney aspirate|ureter|kidney|cystoscop|renal|nephric|ureter|ureterostomy|\\bbladder\\b", fluid_name, ignore.case = TRUE) ~ "kidneys, renal pelvis, ureters and bladder",
+      grepl("foley|urine|mid stream|straight cath|nephrostomy|pcn|pcnu|neph. tube", fluid_name, ignore.case = TRUE) ~ "genito-urinary tract unspecified",
+      grepl("synovial|snyovial|synovium|capsule|casule|knee fluid|kne fluid|knee fl|knee aspiration|shoulder fluid|shoulder aspiration|ankle fluid|ankle aspiration|acetabular fluid|acetabular joint|hip joint|hip aspiration|joint fluid|joint (synovial) fluid|bursitis|prosthetic|tendon|femoral head, ", fluid_name, ignore.case = TRUE) ~ "joints",
+      grepl("larynx|laryngeal|laryndeal|epiglottis", fluid_name, ignore.case = TRUE) ~ "larynx",
+      grepl("appendi|large bowel|large intesti|paracolic gutter", fluid_name, ignore.case = TRUE) ~ "large intestine",
+      grepl("hepatic|peri portal|liver", fluid_name, ignore.case = TRUE) ~ "liver",
+      grepl("lymphatic|lymph node|lymphadenopathy|lymphadenitis", fluid_name, ignore.case = TRUE) ~ "lymph nodes",
+      grepl("endotracheal|endptracheal|\\bett\\b|endotracheal aspirate|trach|tracheal|tracheostomy|sputum|hypertonic saline|rubber|tracheostom|induced|sputum", fluid_name, ignore.case = TRUE) ~ "respiratory tract unspecified",
+      grepl("broncho-alveolar|bronchoalveolar|bronchial|bronchoscopy|bronchoscopic|bronchial|lung|bronchus", fluid_name, ignore.case = TRUE) ~ "lower respiratory tract (lung)",
+      grepl("csf|cerebrospinal fluid|cerebral spinal fluid|epidural|subdural|evd output|tube 1|tube 2|tube 3", fluid_name, ignore.case = TRUE) ~ "meninges and csf",
+      grepl("\\bnose\\b|nasal|nares|nasopharynx|nasopharyngeal|naris|adenoids", fluid_name, ignore.case = TRUE) ~ "upper airway and nasopharynx",
+      grepl("mouth|tongue|throat|oropharyngeal|oropharynx|tonsil|oral cavity", fluid_name, ignore.case = TRUE) ~ "tongue, oral cavity, and oro-pharynx",
+      grepl("ascitic|ascites|ascietes|ascities|acites|ascitic|pd catheter|dialysate|paracentesis|peritoneal|fluid, pd|peritonial|peritoenal|pertioneal|peritoneum|intraperitoneal|retroperitoneal|fluid, dialysis", fluid_name, ignore.case = TRUE) ~ "peritoneum",
+      grepl("pleura|pleural|pluera|plueral|hydropneumothorax|chest fluid|chest tube|ct 1|ct 2|ct 3|\\bct\\b|thoracentesis|thora|pleurx|pleurex|empyema", fluid_name, ignore.case = TRUE) ~ "pleural cavity, pleural fluid",
+      grepl("pustule|pustules|rash", fluid_name, ignore.case = TRUE) ~ "rash, pustules, or abscesses not typical of any of the above",
+      grepl("sinus", fluid_name, ignore.case = TRUE) ~ "sinuses",
+      grepl("\\bskin\\b", fluid_name, ignore.case = TRUE) ~ "skin unspecified",
+      grepl("small bowel", fluid_name, ignore.case = TRUE) ~ "small intestine",
+      grepl("splenic|spleen", fluid_name, ignore.case = TRUE) ~ "spleen",
+      grepl("gastric|stomach", fluid_name, ignore.case = TRUE) ~ "stomach",
+      grepl("testis|testicular|testicle|testes|fluid, seminal", fluid_name, ignore.case = TRUE) ~ "testes",
+      grepl("\\bwd\\b|wound|driveline|drive line|incision", fluid_name, ignore.case = TRUE) ~ "woundsite",
+      grepl("vagina", fluid_name, ignore.case = TRUE) ~ "vagina",
+    TRUE ~ as.character(fluid_category))) %>% 
+  mutate(fluid_category = as.factor(fluid_category))
+
+#grepl in micro_order_name
+data_v7 <- data_v6 %>%
+  mutate(
+    fluid_category = case_when(
+      grepl("wound", micro_order_name, ignore.case = TRUE) ~ "woundsite",
+      grepl("genital", micro_order_name, ignore.case = TRUE) ~ "genital area",
+      grepl("urine", micro_order_name, ignore.case = TRUE) ~ "genito-urinary tract unspecified",
+      grepl("skin", micro_order_name, ignore.case = TRUE) ~ "skin unspecified",
+      grepl("vagina", micro_order_name, ignore.case = TRUE) ~ "vagina",
+      grepl("culture blood", micro_order_name, ignore.case = TRUE) ~ "blood/buffy coat",
+      grepl("urine cystosc", fluid_name, ignore.case = TRUE) ~ "kidneys, renal pelvis, ureters and bladder",
+      grepl("catheter tip", fluid_name, ignore.case = TRUE) ~ "catheter tip", 
+      grepl("csf", fluid_name, ignore.case = TRUE) ~ "meninges and csf",
+      grepl("sputum", fluid_name, ignore.case = TRUE) ~ "respiratory tract unspecified",
+       TRUE ~ as.character(fluid_category))) %>% 
+  mutate(fluid_category = as.factor(fluid_category))
+
+#greply for method name 
+data_v8 <- data_v7 %>% 
+ mutate(
+    fluid_category = case_when(
+      grepl("respiratory bronchial culture", method_name, ignore.case = TRUE) ~ "lower respiratory tract (lung)",
+      grepl("catheter tip", method_name, ignore.case = TRUE) ~ "catheter tip",
+      grepl("csf", method_name, ignore.case = TRUE) ~ "meninges and csf",
+      TRUE ~ as.character(fluid_category))) %>% 
+  mutate(fluid_category = as.factor(fluid_category))
+
+#double check no other strings that can grepl for fluid category
+data_v8 %>% 
+  filter(is.na(fluid_category)) %>% 
+  count(micro_order_name, fluid_name, method_name) 
+  
+#set missing fluid_name as "other unspecified" for fluid category using case when
+data_v9 <- data_v8 %>% 
+  mutate(fluid_category = case_when(
+    is.na(fluid_category) ~ "other unspecified",
+    TRUE ~ as.factor(fluid_category)))
+
+#review distribution of fluid categories 
+data_v9 %>% 
+  select(hospitalization_id, fluid_category) %>% 
+  distinct() %>%
+  count(fluid_category) %>% 
+  mutate(percent = round(n / sum(n) * 100, 2)) %>%
+  arrange(desc(percent))
+
+```
+
+#grepl for antibiotic category
+```{r}
+data_v9 %>% count(antibiotic) %>% arrange(n)
+
+data_v10 <- data_v9 %>% 
+  rename(antibiotic_name = antibiotic) %>% 
+  mutate(antibiotic_category = NA_character_) %>% 
+  
+  #removed 3 rows for esbl as antibiotic_name as you know its esbl elsewhere
+  filter(antibiotic_name != "esbl") %>%
+  
+  mutate(
+    antibiotic_category = case_when(
+    tolower(trimws(antibiotic_name)) == "beta-lactams" ~ "beta_lactams",
+    tolower(trimws(antibiotic_name)) == "cefotaxime/clavulanate" ~ "cefotaxime_clavulanate",
+    tolower(trimws(antibiotic_name)) == "ceftazidime/avibactam" ~ "ceftazidime_avibactam",
+    tolower(trimws(antibiotic_name)) == "ceftolozane/tazobactam" ~ "ceftolozane_tazobactam",
+    tolower(trimws(antibiotic_name)) == "inducible macrolide resistance test (imlsb)" ~ "macrolides",
+    tolower(trimws(antibiotic_name)) == "piperacillin/tazobactam" ~ "piperacillin_tazobactam",
+    tolower(trimws(antibiotic_name)) == "trimethoprim/sulfamethoxazole" ~ "trimethoprim_sulfamethoxazole",
+    
+     TRUE ~ antibiotic_category
+    )) %>% 
+    
+  mutate(
+    antibiotic_category = case_when(
+      is.na(antibiotic_category) & grepl("flucytosine", antibiotic_name, ignore.case = TRUE) ~ "flucytosine",
+      is.na(antibiotic_category) & grepl("amoxicillin/clavulan", antibiotic_name, ignore.case = TRUE) ~ "amoxicillin_clavulanate",
+      is.na(antibiotic_category) & grepl("amphotericin b", antibiotic_name, ignore.case = TRUE) ~ "amphotericin_b",
+      is.na(antibiotic_category) & grepl("ampicillin/sulbactam", antibiotic_name, ignore.case = TRUE) ~ "ampicillin_sulbactam",
+      is.na(antibiotic_category) & grepl("cefotaxime", antibiotic_name, ignore.case = TRUE) ~ "cefotaxime",
+      is.na(antibiotic_category) & grepl("ceftazidime/avibactam", antibiotic_name, ignore.case = TRUE) ~ "ceftazidime_avibactam",
+      is.na(antibiotic_category) & grepl("ceftriaxone", antibiotic_name, ignore.case = TRUE) ~ "ceftriaxone",
+      is.na(antibiotic_category) & grepl("cefuroxime ", antibiotic_name, ignore.case = TRUE) ~ "cefuroxime ",
+      is.na(antibiotic_category) & grepl("ethambutol", antibiotic_name, ignore.case = TRUE) ~ "ethambutol",
+      is.na(antibiotic_category) & grepl("gentamicin", antibiotic_name, ignore.case = TRUE) ~ "gentamicin",
+      is.na(antibiotic_category) & grepl("clindamycin", antibiotic_name, ignore.case = TRUE) ~ "clindamycin",
+      is.na(antibiotic_category) & grepl("isoniazid ", antibiotic_name, ignore.case = TRUE) ~ "isoniazid ",
+      is.na(antibiotic_category) & grepl("meropenem/vaborbactam", antibiotic_name, ignore.case = TRUE) ~ "meropenem_vaborbactam",
+      is.na(antibiotic_category) & grepl("penicillin", antibiotic_name, ignore.case = TRUE) ~ "penicillin",
+      is.na(antibiotic_category) & grepl("pyrazinamide", antibiotic_name, ignore.case = TRUE) ~ "pyrazinamide",
+      is.na(antibiotic_category) & grepl("rifampin", antibiotic_name, ignore.case = TRUE) ~ "rifampin",
+      is.na(antibiotic_category) & grepl("streptomycin", antibiotic_name, ignore.case = TRUE) ~ "streptomycin",
+      is.na(antibiotic_category) & grepl("synercid (quinupristin/dalfop.)", antibiotic_name, ignore.case = TRUE) ~ "quinupristin_dalfopristin",
+      is.na(antibiotic_category) & grepl("tetracycline", antibiotic_name, ignore.case = TRUE) ~ "tetracyclines",
+      TRUE ~ as.character(antibiotic_category))) %>% 
+  
+  #only when you have grepl all antibiotic names with multiple version, you can run this 
+  mutate(antibiotic_category = if_else(is.na(antibiotic_category), antibiotic_name, antibiotic_category)) %>% 
+  mutate(antibiotic_category = as.factor(antibiotic_category)) %>% 
+  relocate(antibiotic_category, .after = antibiotic_name)
+  
+# RUSH mappings for antibiotic name and category   
+ data_v10 %>% 
+  count(antibiotic_name, antibiotic_category) %>% 
+  mutate(percent = round(n / sum(n) * 100, 2)) %>%
+  arrange(desc(n))
+ 
+```
+
+
+
+#grepl for susceptibility 
+```{r}
+data_v10 %>% count(susceptibility) %>% arrange(desc(n))
+
+data_v11 <- data_v10 %>%
+ rename(susceptibility_name = susceptibility) %>% 
+ mutate(susceptibility_category = NA) %>% 
+ mutate(susceptibility_category = case_when(
+    tolower(trimws(susceptibility_name)) == "susceptible" ~ "susceptible",
+    tolower(trimws(susceptibility_name)) == "resistant" ~ "non_susceptible",
+    tolower(trimws(susceptibility_name)) == "intermediate" ~ "intermediate",
+    tolower(trimws(susceptibility_name)) == "not reported" ~ NA_character_,
+    tolower(trimws(susceptibility_name)) == "susceptible dose dependent" ~ "susceptible",
+    tolower(trimws(susceptibility_name)) == "non-susceptible" ~ "non_susceptible",
+    tolower(trimws(susceptibility_name)) == " " ~ NA_character_,
+    tolower(trimws(susceptibility_name)) == "no interpretation" ~ NA_character_,
+    TRUE ~ as.character(susceptibility_category))) %>% 
+  relocate(susceptibility_category, .after = susceptibility_name)
+ 
+
+# RUSH mappings for susceptibility mapping  
+data_v11 %>% 
+  count(susceptibility_name, susceptibility_category) %>% 
+  mutate(percent = round(n / sum(n) * 100, 2)) %>%
+  arrange(desc(n))   
+
+data_v11 
+```
+
+
+#remove micro_order_name, sensitivity_value_unit, result_flag, sens_lab_status
+#first pivot all antibiotics wide, then create numbering (as two identical pathogens collected same time with diff sensitivities should be 2 seperate pathogens), distinct, number, then repivot back down 
+```{r}
+data_v11 %>% 
+  select(patient_id, hospitalization_id, lab_collect_dttm, lab_result_dttm, fluid_category, method_category, organism_category, organism_group, antibiotic_category, susceptibility_category) %>% 
+  pivot_wide(
+    names_from  = antibiotic_category,
+    values_from = susceptibility_category,
+    values_fill = NA_character_) %>%    # blanks become NA
+
+#create identifier from each culture
+  
+```
+
+
+#question 1 - do we want to keep sensitivity_value_unit?
+
+```{r}
+data_v11 <- data_v10 %>% 
+  select(-micro_order_name, -sensitivity_value_unit, -result_flag, -sens_lab_status)
+```
+
+
+
