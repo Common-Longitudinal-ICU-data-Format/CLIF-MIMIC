@@ -235,17 +235,33 @@ def test_no_null_race_ethn_categories(race_ethn_cleaned: pd.DataFrame) -> bool:
 
 def death_extracted() -> pd.DataFrame:
     logging.info("fetching and processing the third component: death data...")
-    query = f"""
-    SELECT 
-        subject_id as patient_id,
-        deathtime as death_dttm
-    FROM '{mimic_table_pathfinder("admissions")}'
+    q = f"""
+    SELECT DISTINCT subject_id
+        , deathtime
+        , dischtime
+        , count: COUNT(*) OVER (PARTITION BY subject_id)
+    FROM '{mimic_table_pathfinder("admissions")}' a 
+    WHERE deathtime IS NOT NULL
+    ORDER BY count DESC
     """
-    df = duckdb.query(query).df()
-    df.dropna(subset=["death_dttm"], inplace=True)
-    df.drop_duplicates(subset=["patient_id"], inplace=True)
-    # TODO: add out of hospital death
-    return df
+    death_from_admissions = duckdb.query(q).df()
+
+    q = f"""
+    FROM death_from_admissions a
+    FULL JOIN '{mimic_table_pathfinder("patients")}' p USING (subject_id)
+    SELECT DISTINCT ON (patient_id) patient_id: subject_id
+        , adm_deathtime: deathtime
+        , pt_dod: dod
+        , adm_dischtime: dischtime
+        , death_dttm: COALESCE(deathtime, dod)
+        , count: COUNT(*) OVER (PARTITION BY subject_id)
+    WHERE death_dttm IS NOT NULL
+    -- sorted ascending by death_dttm allows us to keep the first (earliest) death via DISTINCT ON
+    -- which in MIMIC-IV 3.1 is only an issue that applies to one patient (who died twice)
+    ORDER BY count DESC, death_dttm
+    """
+    death_joined = duckdb.query(q).df()
+    return death_joined
 
 def language_translated() -> pd.DataFrame:
     logging.info("fetching and processing the fourth component: language data...")
