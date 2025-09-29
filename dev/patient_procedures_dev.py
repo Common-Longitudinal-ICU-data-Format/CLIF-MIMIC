@@ -8,11 +8,13 @@ app = marimo.App(width="columns")
 def _():
     import os
     os.getcwd()
-    return
+    return (os,)
 
 
 @app.cell
-def _():
+def _(os):
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
     from src import utils
     return
 
@@ -34,12 +36,12 @@ def _():
         convert_and_sort_datetime, setup_logging, search_mimic_items, mimic_table_pathfinder, \
         resave_mimic_table_from_csv_to_parquet
 
-    return mimic_table_pathfinder, mo, resave_mimic_table_from_csv_to_parquet
+    return mimic_table_pathfinder, mo, pd, save_to_rclif
 
 
 @app.cell
-def _(resave_mimic_table_from_csv_to_parquet):
-    resave_mimic_table_from_csv_to_parquet(table = 'hcpcsevents')
+def _():
+    # resave_mimic_table_from_csv_to_parquet(table = 'hcpcsevents')
     return
 
 
@@ -67,23 +69,6 @@ def _(mimic_table_pathfinder, mo, null):
 
 @app.cell
 def _(mimic_table_pathfinder, mo, null):
-    mimic_d_hcpcs = mo.sql(
-        f"""
-        FROM '{mimic_table_pathfinder("d_hcpcs")}'
-        SELECT *
-        """
-    )
-    return (mimic_d_hcpcs,)
-
-
-@app.cell
-def _(mimic_d_hcpcs):
-    mimic_d_hcpcs
-    return
-
-
-@app.cell
-def _(mimic_table_pathfinder, mo, null):
     mimic_hcpcsevents = mo.sql(
         f"""
         FROM '{mimic_table_pathfinder("hcpcsevents")}'
@@ -95,22 +80,84 @@ def _(mimic_table_pathfinder, mo, null):
 
 @app.cell
 def _(mimic_table_pathfinder, mo, null):
-    clif_patient_procedures = mo.sql(
+    # build 
+    mimic_cpt_hcpcs = mo.sql(
         f"""
         FROM '{mimic_table_pathfinder("hcpcsevents")}' h
         SELECT hospitalization_id: CAST(h.hadm_id AS VARCHAR)
             , billing_provider_id: CAST(NULL AS VARCHAR)
             , performing_provider_id: CAST(NULL AS VARCHAR)
             , procedure_code: CAST(h.hcpcs_cd AS VARCHAR)
-            , procedure_code_starts_with_letter: CASE WHEN LEFT(h.hcpcs_cd, 1) ~ '^[A-Za-z]' THEN 1 ELSE 0 END
             , _procedure_code_format: CASE
-                WHEN regexp_matches(code, '^[0-9]{5}$') THEN 'CPT (Level I)'
-                WHEN regexp_matches(code, '^[0-9]{4}[FT]$') THEN 'CPT (Category II/III)'
-                WHEN regexp_matches(code, '^[A-V][0-9]{4}$') THEN 'HCPCS Level II'
+                WHEN regexp_matches(procedure_code, '^[0-9]{{5}}$') THEN 'cpt_level_1'
+                WHEN regexp_matches(procedure_code, '^[0-9]{{4}}[FT]$') THEN 'cpt_category_2_3'
+                WHEN regexp_matches(procedure_code, '^[A-V][0-9]{{4}}$') THEN 'hcpcs_level_2'
                 ELSE 'Unknown/Invalid' END
+            , procedure_code_format: CASE
+                WHEN _procedure_code_format in ('cpt_level_1', 'cpt_category_2_3') THEN 'CPT'
+                WHEN _procedure_code_format = 'hcpcs_level_2' THEN 'HCPCS'
+                END
             , procedure_billed_dttm: CAST(h.chartdate AS TIMESTAMP)
         """
     )
+    return (mimic_cpt_hcpcs,)
+
+
+@app.cell
+def _(mimic_table_pathfinder, mo, null):
+    mimic_icd = mo.sql(
+        f"""
+        FROM '{mimic_table_pathfinder("procedures_icd")}' i
+        SELECT hospitalization_id: CAST(i.hadm_id AS VARCHAR)
+            , billing_provider_id: CAST(NULL AS VARCHAR)
+            , performing_provider_id: CAST(NULL AS VARCHAR)
+            , procedure_code: CAST(i.icd_code AS VARCHAR)
+            , procedure_code_format: CASE
+                WHEN icd_version in (10, '10') THEN 'ICD10PCS'
+                WHEN icd_version in (9, '9') THEN 'ICD9'
+                END
+            , procedure_billed_dttm: CAST(i.chartdate AS TIMESTAMP)
+        """
+    )
+    return (mimic_icd,)
+
+
+@app.cell
+def _(mimic_cpt_hcpcs, mimic_icd, mo):
+    clif_patient_procedure = mo.sql(
+        f"""
+        FROM mimic_icd
+        SELECT *
+        UNION ALL
+        FROM mimic_cpt_hcpcs
+        SELECT COLUMNS('^[^_].*')
+        """
+    )
+    return
+
+
+@app.cell
+def _(pd):
+    pt_demo = pd.read_parquet('tests/clif_patient.parquet')
+    hosp_demo = pd.read_parquet('tests/clif_hospitalization.parquet')
+    return
+
+
+@app.cell
+def _(mo):
+    clif_demo_patient_procedure = mo.sql(
+        """
+        FROM clif_patient_procedure p
+        INNER JOIN hosp_demo d USING (hospitalization_id)
+        SELECT p.*
+        """
+    )
+    return (clif_demo_patient_procedure,)
+
+
+@app.cell
+def _(clif_demo_patient_procedure, save_to_rclif):
+    save_to_rclif(df=clif_demo_patient_procedure, table_name='demo_patient_procedure')
     return
 
 
