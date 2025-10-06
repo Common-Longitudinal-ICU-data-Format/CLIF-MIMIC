@@ -130,7 +130,7 @@ def mimic_table_pathfinder(table: str, data_format: str = "parquet") -> str:
     elif table in ICU_TABLES:
         module = "icu"
     else:
-        raise ValueError(f"Table not found: {table}")    
+        raise ValueError(f"This table name for MIMIC is not found: {table}. Please check for typo.")    
     
     # first check the dir structure of the parquet path -- whether the parquet files are (1) stored together 
     # under the same directory or (2) seperated into two subdirectories by modules as is the case for csv
@@ -229,9 +229,12 @@ def read_from_rclif(table_name):
 #   ETL - mapping
 # ----------------------
 
+def mapping_path_finder(csv_name: str):
+    return SCRIPT_DIR / f"../data/mappings/mimic-to-clif-mappings - {csv_name}.csv"
+
 def load_mapping_csv(csv_name: str, dtype=None):
     return pd.read_csv(
-        SCRIPT_DIR / f"../data/mappings/mimic-to-clif-mappings - {csv_name}.csv",
+        mapping_path_finder(csv_name),
         dtype=dtype,
     )
 
