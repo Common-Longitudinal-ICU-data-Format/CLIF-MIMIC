@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.17"
+__generated_with = "0.16.4"
 app = marimo.App(width="columns")
 
 
@@ -34,9 +34,8 @@ def _():
     from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_csv, \
         get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
         convert_and_sort_datetime, setup_logging, search_mimic_items, mimic_table_pathfinder, \
-        resave_mimic_table_from_csv_to_parquet
-
-    return mimic_table_pathfinder, mo, pd, save_to_rclif
+        resave_mimic_table_from_csv_to_parquet, read_from_rclif
+    return mimic_table_pathfinder, mo, pd, read_from_rclif
 
 
 @app.cell
@@ -130,6 +129,7 @@ def _(mimic_cpt_hcpcs, mimic_icd, mo):
         SELECT *
         UNION ALL
         FROM mimic_cpt_hcpcs
+        -- exclude columns that start with underscore
         SELECT COLUMNS('^[^_].*')
         """
     )
@@ -146,18 +146,38 @@ def _(pd):
 @app.cell
 def _(mo):
     clif_demo_patient_procedure = mo.sql(
-        """
+        f"""
         FROM clif_patient_procedure p
         INNER JOIN hosp_demo d USING (hospitalization_id)
         SELECT p.*
         """
     )
-    return (clif_demo_patient_procedure,)
+    return
 
 
 @app.cell
-def _(clif_demo_patient_procedure, save_to_rclif):
-    save_to_rclif(df=clif_demo_patient_procedure, table_name='demo_patient_procedure')
+def _():
+    # save_to_rclif(df=clif_demo_patient_procedure, table_name='demo_patient_procedure')
+    return
+
+
+@app.cell
+def _():
+    from src.tables import patient_procedures
+
+    patient_procedures._main()
+    return
+
+
+@app.cell
+def _(read_from_rclif):
+    pp = read_from_rclif('patient_procedures')
+    return (pp,)
+
+
+@app.cell
+def _(pp):
+    pp
     return
 
 
