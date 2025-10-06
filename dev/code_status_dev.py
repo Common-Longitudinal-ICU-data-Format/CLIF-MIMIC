@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.17"
+__generated_with = "0.16.4"
 app = marimo.App(width="columns")
 
 
@@ -34,9 +34,8 @@ def _():
     from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_csv, \
         get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
         convert_and_sort_datetime, setup_logging, search_mimic_items, mimic_table_pathfinder, \
-        resave_mimic_table_from_csv_to_parquet, clif_table_pathfinder
-
-    return clif_table_pathfinder, fetch_mimic_events, mo, pd, save_to_rclif
+        resave_mimic_table_from_csv_to_parquet, clif_table_pathfinder, read_from_rclif
+    return clif_table_pathfinder, fetch_mimic_events, mo, pd, read_from_rclif
 
 
 @app.cell
@@ -65,7 +64,7 @@ def _(cs_events):
 
 
 @app.cell(hide_code=True)
-def _(clif_table_pathfinder, cs_events, mo, null):
+def _(clif_table_pathfinder, mo):
     clif_code_status = mo.sql(
         f"""
         FROM cs_events e
@@ -94,12 +93,37 @@ def _(mo):
         SELECT p.*
         """
     )
-    return (clif_demo_code_status,)
+    return
 
 
 @app.cell
-def _(clif_demo_code_status, save_to_rclif):
-    save_to_rclif(df=clif_demo_code_status, table_name='demo_code_status')
+def _():
+    # save_to_rclif(df=clif_demo_code_status, table_name='demo_code_status')
+    return
+
+
+@app.cell
+def _():
+    from src.tables import code_status
+
+    code_status._test()
+    return
+
+
+@app.cell
+def _(read_from_rclif):
+    cs = read_from_rclif('code_status')
+    return (cs,)
+
+
+@app.cell
+def _(cs):
+    cs
+    return
+
+
+@app.cell
+def _():
     return
 
 
