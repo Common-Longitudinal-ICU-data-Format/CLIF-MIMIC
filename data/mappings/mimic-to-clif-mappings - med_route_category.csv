@@ -1,0 +1,21 @@
+clif_med_route_category,mimic_ordercategoryname,mimic_secondaryordercategoryname,mimic_ordercomponenttypedescription,mimic_ordercategorydescription,mimic_category,n,status,reviewer,note
+iv,01-Drips,02-Fluids (Crystalloids),Main order parameter,Continuous Med,Medications,2249004,validated,Guleria,
+iv,01-Drips,02-Fluids (Crystalloids),Mixed solution,Continuous Med,Fluids/Intake,1719754,validated,Guleria,
+SPECIAL,05-Med Bolus,,Main order parameter,Drug Push,Medications,830809,validated,Guleria,"this combo should technically all be mapped to 'iv' but we would not have known this without tabulating all the meds under this combo in the next sheet, so it is marked as ""SPECIAL"" and mapped by each individual med 'itemid' there"
+iv,08-Antibiotics (IV),02-Fluids (Crystalloids),Mixed solution,Drug Push,Fluids/Intake,592030,validated,Guleria,
+iv,08-Antibiotics (IV),02-Fluids (Crystalloids),Main order parameter,Drug Push,Antibiotics,580537,validated,Guleria,
+iv,02-Fluids (Crystalloids),Additive (Crystalloid),Main order parameter,Continuous IV,Fluids/Intake,426736,validated,Guleria,
+im,06-Insulin (Non IV),,Main order parameter,Drug Push,Medications,289224,validated,Guleria,Non IV insulin is almost invariably subcutaneous
+SPECIAL,11-Prophylaxis (Non IV),,Main order parameter,Drug Push,Medications,163670,validated,Guleria,the heparin are all subcutaneous (im) and the pantoprazole is all PO (enteral)
+iv,03-IV Fluid Bolus,,Main order parameter,Bolus,Fluids/Intake,103722,validated,Guleria,
+iv,02-Fluids (Crystalloids),Additive (Crystalloid),Additives Ampoule,Continuous IV,Medications,92680,validated,Guleria,
+iv,02-Fluids (Crystalloids),Additive (Crystalloid),Main order parameter,Continuous IV,Medications,58805,validated,Guleria,
+iv,04-Fluids (Colloids),,Main order parameter,Continuous IV,Blood Products/Colloids,57376,validated,Guleria,
+iv,10-Prophylaxis (IV),02-Fluids (Crystalloids),Main order parameter,Drug Push,Medications,51818,validated,Guleria,
+SPECIAL,05-Med Bolus,,Main order parameter,Drug Push,Fluids/Intake,22979,validated,Guleria,"likewise, this combo should technically all be mapped to 'iv' but we would not have known this without tabulating all the meds under this combo in the next sheet, so it is marked as ""SPECIAL"" and mapped by each individual med 'itemid' there"
+SPECIAL,09-Antibiotics (Non IV),,Main order parameter,Non Iv Meds,Antibiotics,17924,validated,Guleria,The majority will be PO (enteral) except for 'Penicillin G potassium' which is 'im'
+iv,12-Parenteral Nutrition,Additives (PN),Main order parameter,Continuous IV,Nutrition - Parenteral,13178,validated,Guleria,
+iv,12-Parenteral Nutrition,Additives (PN),Additives Ampoule,Continuous IV,Nutrition - Parenteral,4044,validated,Guleria,
+iv,12-Parenteral Nutrition,Additives (PN),Additives Ampoule,Continuous IV,Medications,2332,validated,Guleria,
+UNINFORMATIVE,,,,,,440,validated,Guleria,
+iv,10-Prophylaxis (IV),02-Fluids (Crystalloids),Mixed solution,Drug Push,Fluids/Intake,294,validated,Guleria,
