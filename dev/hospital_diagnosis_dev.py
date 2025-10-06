@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.17"
+__generated_with = "0.16.4"
 app = marimo.App(width="columns")
 
 
@@ -34,9 +34,8 @@ def _():
     from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_csv, \
         get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
         convert_and_sort_datetime, setup_logging, search_mimic_items, mimic_table_pathfinder, \
-        resave_mimic_table_from_csv_to_parquet
-
-    return mimic_table_pathfinder, mo, pd, save_to_rclif
+        resave_mimic_table_from_csv_to_parquet, read_from_rclif
+    return mimic_table_pathfinder, mo, pd, read_from_rclif
 
 
 @app.cell
@@ -80,12 +79,37 @@ def _(mo):
         SELECT dx.*
         """
     )
-    return (clif_demo_hospital_diagnosis,)
+    return
 
 
 @app.cell
-def _(clif_demo_hospital_diagnosis, save_to_rclif):
-    save_to_rclif(df=clif_demo_hospital_diagnosis, table_name='demo_hospital_diagnosis')
+def _():
+    # save_to_rclif(df=clif_demo_hospital_diagnosis, table_name='demo_hospital_diagnosis')
+    return
+
+
+@app.cell
+def _():
+    from src.tables import hospital_diagnosis as dx
+
+    dx._test()
+    return
+
+
+@app.cell
+def _(read_from_rclif):
+    dx_df = read_from_rclif('hospital_diagnosis')
+    return (dx_df,)
+
+
+@app.cell
+def _(dx_df):
+    dx_df
+    return
+
+
+@app.cell
+def _():
     return
 
 
