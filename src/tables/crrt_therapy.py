@@ -29,14 +29,15 @@ setup_logging()
 
 from src.utils_qa import all_null_check
 
-CRRT_MODE_CATEGORIES = ["scuf", "cvvh", "cvvhd", "cvvhdf"]
+CRRT_MODE_CATEGORIES = ["scuf", "cvvh", "cvvhd", "cvvhdf", "avvh"]
 
 CLIF_CRRT_SCHEMA = pa.DataFrameSchema(
     {
         "hospitalization_id": pa.Column(str, nullable=False),
+        "device_id": pa.Column(str, checks=[all_null_check], nullable=True),
         "recorded_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False),
         "crrt_mode_name": pa.Column(str, nullable=True),
-        "crrt_mode_category": pa.Column(str, checks=[pa.Check.unique_values_eq(CRRT_MODE_CATEGORIES)], nullable=True),
+        "crrt_mode_category": pa.Column(str, checks=[pa.Check.isin(CRRT_MODE_CATEGORIES)], nullable=True),
         "dialysis_machine_name": pa.Column(str, checks=[all_null_check], nullable=True),
         "blood_flow_rate": pa.Column(Float32, nullable=True),
         "pre_filter_replacement_fluid_rate": pa.Column(Float32, nullable=True),
@@ -83,6 +84,7 @@ def crrt_events_cast_and_cleaned(crrt_events_pivoted_wider: pd.DataFrame) -> pd.
     query = """
     SELECT
         CAST(hadm_id as VARCHAR) as hospitalization_id,
+        CAST(NULL as VARCHAR) as device_id,
         CAST(time as TIMESTAMP) as recorded_dttm,
         CAST(crrt_mode_name as VARCHAR) as crrt_mode_name,
         CAST(lower(crrt_mode_name) as VARCHAR) as crrt_mode_category,
