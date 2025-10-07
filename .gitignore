@@ -15,6 +15,7 @@ output/*
 logs/*
 # tests/  # removed - tests should be version controlled
 config/config.json
+__marimo__/
 
 .hamilton_cache/
 ._*
