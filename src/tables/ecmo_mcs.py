@@ -4,7 +4,7 @@ import pandas as pd
 import logging
 import duckdb
 from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
-import pandera as pa
+import pandera.pandas as pa
 from pandera.dtypes import Float32
 from typing import Dict, List
 import json
@@ -24,12 +24,12 @@ CLIF_ECMO_SCHEMA = pa.DataFrameSchema(
         "device_name": pa.Column(pa.String, nullable=True),
         "device_category": pa.Column(pa.String, nullable=True),
         "mcs_group": pa.Column(pa.String, nullable=True), # check whether it should be mcs_group instead
-        "side": pa.Column(pa.String,  nullable=True, checks=[pa.Check.isin(["left", "right", "both", None])]),
+        # "side": pa.Column(pa.String,  nullable=True, checks=[pa.Check.isin(["left", "right", "both", None])]),
         "device_metric_name": pa.Column(pa.String, nullable=True),
         "device_rate": pa.Column(pa.Float32, nullable=True),
         "flow": pa.Column(pa.Float32, nullable=True),
         "sweep": pa.Column(pa.Float32, nullable=True),
-        "fdo2": pa.Column(pa.Float32, nullable=True),
+        "fdO2": pa.Column(pa.Float32, nullable=True),
     },
     strict=True,
 )
@@ -112,17 +112,17 @@ def coalesced(pivoted_wider: pd.DataFrame) -> pd.DataFrame:
                              '229303', '229304', '229675', '229679', '229823', '229829', '229841', '229842', '229845',
                              '229846', '230086']
     
-    # Coalescing the different labels for device rate, flow, sweep, fdo2, and device name based on the device.
+    # Coalescing the different labels for device rate, flow, sweep, fdO2, and device name based on the device.
     df["device_rate"] = df[["229262", "229263", "229829", "229845", "229277", "229303", "228874", "228156", "229675", "228195"]].bfill(axis=1).iloc[:, 0]
     df["flow"] = df[["229254", "229255", "229823", "229842", "229270", "229304", "228873", "220125", "220128", "228154", "228154", "228198"]].bfill(axis=1).iloc[:, 0]
     df["sweep"] = df[["229278", "229846", "228192"]].bfill(axis=1).iloc[:, 0]
-    df["fdo2"] = df[["229280", "229841", "230086"]].bfill(axis=1).iloc[:, 0]
+    df["fdO2"] = df[["229280", "229841", "230086"]].bfill(axis=1).iloc[:, 0]
     df["device_name"] = df[["229268", "229679"]].bfill(axis=1).iloc[:, 0] 
     return df
 
 def cleaned(coalesced: pd.DataFrame) -> pd.DataFrame:
     logging.info("cleaning up column names and data types...")
-    df = coalesced.loc[:, ['hospitalization_id', 'recorded_dttm', 'device_name', 'device_category', 'mcs_group', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdo2']]
+    df = coalesced.loc[:, ['hospitalization_id', 'recorded_dttm', 'device_name', 'device_category', 'mcs_group', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdO2']]
     df['flow'] = df['flow'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
     df['sweep'] = df['sweep'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
 
@@ -166,12 +166,12 @@ def side(cleaned: pd.DataFrame) -> pd.Series:
 
 def recast(cleaned: pd.DataFrame, side: pd.Series) -> pd.DataFrame:
     df = cleaned
-    df['side'] = side
+    # df['side'] = side
     # Convert specific columns to string
     df[['hospitalization_id', 'device_name', 'device_category', 'device_metric_name']] = df[['hospitalization_id', 'device_name', 'device_category', 'device_metric_name']].astype('string')
 
     # Convert specific columns to numeric
-    df[['device_rate', 'flow', 'sweep', 'fdo2']] = df[['device_rate', 'flow', 'sweep', 'fdo2']].apply(pd.to_numeric, errors='coerce', downcast='float')
+    df[['device_rate', 'flow', 'sweep', 'fdO2']] = df[['device_rate', 'flow', 'sweep', 'fdO2']].apply(pd.to_numeric, errors='coerce', downcast='float')
     
     df['recorded_dttm'] = convert_tz_to_utc(df['recorded_dttm'])
     return df
@@ -181,14 +181,15 @@ def outliers_removed(recast: pd.DataFrame) -> pd.DataFrame:
     df = recast
     df.loc[~df['sweep'].between(0, 15), 'sweep'] = pd.NA
     df.loc[~df['flow'].between(0, 10), 'flow'] = pd.NA
-    df.loc[~df['fdo2'].between(0, 100), 'fdo2'] = pd.NA
+    df.loc[~df['fdO2'].between(0, 100), 'fdO2'] = pd.NA
     return df
 
 @tag(property="final")
 def reordered(outliers_removed: pd.DataFrame) -> pd.DataFrame:
     column_order = [
         'hospitalization_id', 'recorded_dttm', 'device_name', 'device_category',
-        'mcs_group', 'side', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdo2'
+        'mcs_group', # 'side', 
+        'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdO2'
     ]
     # Reorder the DataFrame
     return outliers_removed[column_order]

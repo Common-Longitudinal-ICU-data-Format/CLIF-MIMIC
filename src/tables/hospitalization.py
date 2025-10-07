@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import duckdb
 from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
-import pandera as pa
+import pandera.pandas as pa
 from pandera.dtypes import Float32
 from typing import Dict, List
 import json

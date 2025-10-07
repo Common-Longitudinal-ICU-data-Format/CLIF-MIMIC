@@ -11,7 +11,7 @@ from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_cs
     convert_and_sort_datetime, setup_logging, con, REPO_ROOT, mimic_table_pathfinder, \
     convert_tz_to_utc
 from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
-import pandera as pa
+import pandera.pandas as pa
 from pandera.dtypes import Float32
 import json
 setup_logging()

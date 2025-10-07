@@ -5,7 +5,7 @@ import logging
 import importlib 
 import duckdb
 from hamilton.function_modifiers import tag, datasaver, config, check_output
-import pandera as pa
+import pandera.pandas as pa
 import json
 
 from src.utils import (

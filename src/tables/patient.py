@@ -6,7 +6,7 @@ import logging
 from importlib import reload
 import src.utils
 from hamilton.function_modifiers import tag, datasaver, config, check_output
-import pandera as pa
+import pandera.pandas as pa
 import json
 # reload(src.utils)
 from src.utils import (

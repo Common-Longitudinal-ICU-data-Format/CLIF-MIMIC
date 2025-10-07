@@ -6,7 +6,7 @@ import re
 import importlib 
 import duckdb
 from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
-import pandera as pa
+import pandera.pandas as pa
 from typing import Dict, List
 import json
 

@@ -1,4 +1,4 @@
-import pandera as pa
+import pandera.pandas as pa
 
 all_null_check = pa.Check(
     lambda s: s.isna().all(), 
