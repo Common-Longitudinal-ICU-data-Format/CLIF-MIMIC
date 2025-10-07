@@ -1,7 +1,7 @@
 import logging
 # from tqdm import tqdm
 from src.tables import labs, patient, hospitalization, adt, respiratory_support, vitals, patient_assessments, \
-    medication_admin_continuous, position, crrt_therapy, ecmo_mcs
+    medication_admin, position, crrt_therapy, ecmo_mcs, hospital_diagnosis, patient_procedures, code_status
 from src.utils import setup_logging, resave_all_mimic_tables_from_csv_to_parquet, \
     resave_select_mimic_tables_from_csv_to_parquet, resave_mimic_table_from_csv_to_parquet, \
     MIMIC_TABLES_NEEDED_FOR_CLIF, config, MIMIC_CSV_DIR, MIMIC_PARQUET_DIR, create_dir_if_not_exists, \
@@ -22,7 +22,7 @@ def _main():
     counter = 1
     logging.info(f"--------------------------------")
     
-    # display the progress of the building process with tqdm
+    # TODO:display the progress of the building process with tqdm
     for clif_table_str in CLIF_TABLES_TO_BUILD:
         logging.info(f"building {counter} out of {len(CLIF_TABLES_TO_BUILD)} clif tables")
         clif_table_object = globals()[clif_table_str]

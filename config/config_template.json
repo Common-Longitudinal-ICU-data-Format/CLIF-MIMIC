@@ -7,18 +7,21 @@
     "overwrite_existing_mimic_parquet": 0,
     "clif_output_dir_name": "",
     "mimic_version": "3.1",
-    "clif_version": "2.0",
+    "clif_version": "2.1",
     "clif_tables": {
-        "patient": 1,
-        "hospitalization": 1,
-        "adt": 1,
-        "vitals": 1,
-        "labs": 1,
-        "patient_assessments": 1,
-        "respiratory_support": 1,
-        "medication_admin_continuous": 1,
-        "position": 1,
+        "patient": 0,
+        "hospitalization": 0,
+        "adt": 0,
+        "vitals": 0,
+        "labs": 0,
+        "patient_assessments": 0,
+        "respiratory_support": 0,
+        "medication_admin_continuous": 0,
+        "position": 0,
         "crrt_therapy": 1,
-        "ecmo_mcs": 1
+        "ecmo_mcs": 1,
+        "code_status": 1,
+        "hospital_diagnosis": 1,
+        "patient_procedures": 1
     }
 }

@@ -83,7 +83,10 @@ MIMIC_TABLES_NEEDED_FOR_CLIF = [
     "ingredientevents",
     "inputevents",
     "outputevents",
-    "procedureevents"
+    "procedureevents",
+    "hcpcsevents",
+    "procedures_icd",
+    "diagnoses_icd"
 ]
 
 CLIF_DTTM_FORMAT = "YYYY-MM-DD HH:MM:SS+00:00"
