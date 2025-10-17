@@ -151,8 +151,9 @@ def _flatten_timestamps(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) 
     query = f"""
     -- the additional Starting rows for 'Paused' and 'FinishedRunning' to be joined back
     WITH t1 as (
-        SELECT patient_id, hospitalization_id, med_order_id, _med_category as med_category
-            , admin_dttm, starttime, endtime, '[Restarted]' as mar_action_name
+        SELECT patient_id, hospitalization_id, med_order_id, med_category: _med_category
+            , admin_dttm, starttime, endtime
+            , mar_action_name: '[Restarted]' 
             , med_dose
             , med_dose_unit
         FROM df
@@ -161,7 +162,10 @@ def _flatten_timestamps(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) 
     ), t2 as (
         SELECT patient_id, hospitalization_id, med_order_id, _med_category as med_category
             , admin_dttm, starttime, endtime, mar_action_name
-            , med_dose
+            , med_dose: CASE 
+                WHEN mar_action_name in ('Paused', 'FinishedRunning') THEN 0
+                ELSE med_dose
+            END
             , med_dose_unit
         FROM df
         UNION 
