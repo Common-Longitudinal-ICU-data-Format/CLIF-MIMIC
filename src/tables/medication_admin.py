@@ -60,9 +60,6 @@ INTM_SCHEMA = pa.DataFrameSchema(
     strict=True,
 )
 
-# FIXME: likely remove this
-# MAC_MCIDE_URL = "https://raw.githubusercontent.com/clif-consortium/CLIF/main/mCIDE/clif_medication_admin_continuous_med_categories.csv"
-
 def med_category_mapping() -> pd.DataFrame:
     return load_mapping_csv("med_category")
 
@@ -273,6 +270,7 @@ def intm_med_group_mapping() -> pd.DataFrame:
 
 @tag(property="final")
 def intm_cast_w_med_group(intm_flattened: duckdb.DuckDBPyRelation, intm_med_group_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
+    logging.info("casting the dtypes and mapping med_group for the intermittent table... (this is the final step that materializes the table so might take longer)")
     q = """
     FROM intm_flattened
     LEFT JOIN intm_med_group_mapping USING (med_category)
@@ -382,7 +380,7 @@ def mar_action_dedup_mapping(cont_flattened: duckdb.DuckDBPyRelation) -> pd.Data
     return pd.read_csv(mapping_path_finder("mar_action_dedup"))
 
 def cont_deduped(cont_flattened: duckdb.DuckDBPyRelation, mar_action_dedup_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
-    logging.info("removing duplicated timestamps that naturally occur as a result of flattening timestamps...")
+    logging.info("removing duplicated timestamps that naturally occur as a product of timestamp flattening...")
     q = """
     WITH base as (
         FROM cont_flattened
@@ -441,6 +439,7 @@ def cont_med_group_mapping() -> pd.DataFrame:
 
 @tag(property="final")
 def cont_cast_w_med_group(cont_deduped: duckdb.DuckDBPyRelation, cont_med_group_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
+    logging.info("casting the dtypes and mapping med_group for the continuous table... (this is the final step that materializes the table so might take longer)")
     q = """
     FROM cont_deduped
     LEFT JOIN cont_med_group_mapping USING (med_category)
