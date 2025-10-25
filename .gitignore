@@ -29,6 +29,9 @@ rclif-1.0/
 # wget logging
 wget-log
 
+# duckdb
+.tmp/
+
 # vscode setting
 .vscode
 
