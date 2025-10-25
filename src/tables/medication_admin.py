@@ -357,7 +357,7 @@ def cont_flattened(cont_deduped_by_timestamps: duckdb.DuckDBPyRelation) -> duckd
         , med_category
         , admin_dttm
         , _rn: ROW_NUMBER() OVER (PARTITION BY hospitalization_id, med_order_id, med_category ORDER BY admin_dttm)
-        , mar_action_name: CASE 
+        , _mar_action_name: CASE 
             WHEN statusdescription = 'Bolus' AND _timestamp_type = 'starttime'
                 THEN '[Started Bolus]'
             WHEN statusdescription = 'Bolus' AND _timestamp_type = 'endtime'
@@ -373,7 +373,7 @@ def cont_flattened(cont_deduped_by_timestamps: duckdb.DuckDBPyRelation) -> duckd
         , med_dose_unit: rateuom
         , med_route_name
         , med_route_category
-    ORDER BY hospitalization_id, med_order_id, med_category, admin_dttm, mar_action_name
+    ORDER BY hospitalization_id, med_order_id, med_category, admin_dttm, _mar_action_name
     """
     cont_flattened = duckdb.sql(q)
     return cont_flattened
@@ -387,7 +387,7 @@ def cont_deduped(cont_flattened: duckdb.DuckDBPyRelation, mar_action_dedup_mappi
     WITH base as (
         FROM cont_flattened
         SELECT *
-            , mar_action_names: STRING_AGG(mar_action_name, ', ' ORDER BY mar_action_name) 
+            , mar_action_names: STRING_AGG(_mar_action_name, ', ' ORDER BY _mar_action_name) 
                 OVER (PARTITION BY hospitalization_id, med_order_id, med_category, admin_dttm)
     ), mapped as (
         FROM base b
@@ -400,7 +400,7 @@ def cont_deduped(cont_flattened: duckdb.DuckDBPyRelation, mar_action_dedup_mappi
         , med_name
         , med_category
         , admin_dttm
-        , mar_action_name: COALESCE(mar_action_name_to_display, mar_action_name) 
+        , mar_action_name: COALESCE(mar_action_name_to_display, _mar_action_name)
         , mar_action_category: CASE
             WHEN 'ChangeDose/Rate' in mar_action_name OR 'Bolus' in mar_action_name
                 THEN 'dose_change'
@@ -408,11 +408,13 @@ def cont_deduped(cont_flattened: duckdb.DuckDBPyRelation, mar_action_dedup_mappi
             WHEN mar_action_name in ('FinishedRunning', 'FinishedRunning, FinishedRunning', 'Stopped', 'Paused', 'Bolus') THEN 'stop'
             WHEN '[Restarted]' in mar_action_name THEN 'going'
             ELSE 'other' END
-        , med_dose
+        , med_dose: CASE
+            WHEN mar_action_category in ('stop') THEN 0.0
+            ELSE med_dose END
         , med_dose_unit
         , med_route_name
         , med_route_category
-    WHERE mar_action_name_w_correct_dose = mar_action_name
+    WHERE mar_action_name_w_correct_dose = _mar_action_name
         OR mar_action_name_w_correct_dose IS NULL -- when there are no duplicates
     ORDER BY hospitalization_id, med_order_id, med_category, admin_dttm
     """
