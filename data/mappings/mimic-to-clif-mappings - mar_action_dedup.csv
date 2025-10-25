@@ -1,0 +1,9 @@
+mar_action_names,n,mar_action_name_to_display,mar_action_name_w_correct_dose
+"ChangeDose/Rate, [Restarted]",2941979,ChangeDose/Rate,[Restarted]
+"Paused, [Restarted]",12085,"Paused, [Restarted]",[Restarted]
+"ChangeDose/Rate, [Started Bolus]",474,"ChangeDose/Rate, [Started Bolus]",[Started Bolus]
+"[Finished Bolus], [Restarted]",88,"[Finished Bolus], [Restarted]",[Restarted]
+"[Finished Bolus], [Started Bolus]",51,"[Finished Bolus], [Started Bolus]",[Started Bolus]
+"ChangeDose/Rate, [Restarted], [Restarted]",6,"ChangeDose/Rate, [Restarted], [Restarted]",[Restarted]
+"Paused, [Started Bolus]",2,"Paused, [Started Bolus]",[Started Bolus]
+"Reported, [Restarted]",1,"Reported, [Restarted]",[Restarted]

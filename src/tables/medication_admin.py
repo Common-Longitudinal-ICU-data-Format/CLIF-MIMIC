@@ -15,10 +15,16 @@ from hamilton.function_modifiers import tag, datasaver, config, cache, dataloade
 import pandera.pandas as pa
 from pandera.dtypes import Float32
 from typing import Dict, List
+import json
 
 setup_logging()
 
-SCHEMA = pa.DataFrameSchema(
+CONT_MAR_ACTION_CATEGORIES = ['dose_change', 'start', 'stop', 'going', 'other']
+INTM_MAR_ACTION_CATEGORIES = ['given', 'other']
+CONT_MED_ROUTE_CATEGORIES = ['im', 'iv', 'inhaled']
+INTM_MED_ROUTE_CATEGORIES = ['im', 'iv', 'enteral', 'buccal_sublingual', 'intrapleural']
+
+CONT_SCHEMA = pa.DataFrameSchema(
     {
         "hospitalization_id": pa.Column(str, nullable=False),
         "med_order_id": pa.Column(str, nullable=False),
@@ -26,32 +32,50 @@ SCHEMA = pa.DataFrameSchema(
         "med_name": pa.Column(str, nullable=False),
         "med_category": pa.Column(str, nullable=False),
         "mar_action_name": pa.Column(str, nullable=False),
-        "mar_action_category": pa.Column(str, nullable=False),
+        "mar_action_category": pa.Column(str, checks=[pa.Check.isin(CONT_MAR_ACTION_CATEGORIES)], nullable=False),
         "med_dose": pa.Column(Float32, nullable=False),
         "med_dose_unit": pa.Column(str, nullable=False),
         "med_route_name": pa.Column(str, nullable=False),
-        "med_route_category": pa.Column(str, nullable=False),
+        "med_route_category": pa.Column(str, checks=[pa.Check.isin(CONT_MED_ROUTE_CATEGORIES)], nullable=False),
+        "med_group": pa.Column(str, nullable=False),
     },  
     strict=True,
 )
 
+INTM_SCHEMA = pa.DataFrameSchema(
+    {
+        "hospitalization_id": pa.Column(str, nullable=False),
+        "med_order_id": pa.Column(str, nullable=False),
+        "admin_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False),
+        "med_name": pa.Column(str, nullable=False),
+        "med_category": pa.Column(str, nullable=False),
+        "mar_action_name": pa.Column(str, nullable=False),
+        "mar_action_category": pa.Column(str, checks=[pa.Check.isin(INTM_MAR_ACTION_CATEGORIES)], nullable=False),
+        "med_dose": pa.Column(Float32, nullable=False),
+        "med_dose_unit": pa.Column(str, nullable=False),
+        "med_route_name": pa.Column(str, nullable=False),
+        "med_route_category": pa.Column(str, checks=[pa.Check.isin(INTM_MED_ROUTE_CATEGORIES)], nullable=False),
+        "med_group": pa.Column(str, nullable=False),
+    },  
+    strict=True,
+)
 
 # FIXME: likely remove this
 # MAC_MCIDE_URL = "https://raw.githubusercontent.com/clif-consortium/CLIF/main/mCIDE/clif_medication_admin_continuous_med_categories.csv"
 
-def med_admin_mapping() -> pd.DataFrame:
-    return load_mapping_csv("med_admin")
+def med_category_mapping() -> pd.DataFrame:
+    return load_mapping_csv("med_category")
 
-def med_item_ids(med_admin_mapping) -> pd.Series:
+def med_item_ids(med_category_mapping: pd.DataFrame) -> pd.Series:
     logging.info("identifying relevant items from the mapping file...")
 
     return get_relevant_item_ids(
-        mapping_df = med_admin_mapping, 
+        mapping_df = med_category_mapping, 
         decision_col = "decision", 
         excluded_labels = ["NO MAPPING", "UNSURE", "NOT AVAILABLE"]
         ) 
 
-def med_events_extracted(med_item_ids) -> pd.DataFrame:
+def med_events_extracted(med_item_ids: pd.Series) -> pd.DataFrame:
     logging.info("fetching corresponding events...")
     med_events = fetch_mimic_events(med_item_ids).pipe(convert_and_sort_datetime)
     logging.info("removing extra whitespaces in the `ordercomponenttypedescription` column that disrupts later joins that need exact matching...")
@@ -77,10 +101,10 @@ def med_route_mapping_by_id() -> pd.DataFrame:
     """
     return duckdb.sql(q).df()
 
-def med_route_mapped(med_events: pd.DataFrame, med_route_mapping: pd.DataFrame, med_route_mapping_by_id: pd.DataFrame) -> duckdb.DuckDBPyRelation:
+def med_route_mapped(med_events_extracted: pd.DataFrame, med_route_mapping: pd.DataFrame, med_route_mapping_by_id: pd.DataFrame) -> duckdb.DuckDBPyRelation:
     logging.info("mapping med route...")
     q = """
-    FROM med_events e
+    FROM med_events_extracted e
     LEFT JOIN med_route_mapping m
         ON e.ordercategoryname IS NOT DISTINCT FROM m.mimic_ordercategoryname
         AND e.secondaryordercategoryname IS NOT DISTINCT FROM m.mimic_secondaryordercategoryname
@@ -106,12 +130,12 @@ def med_route_mapped(med_events: pd.DataFrame, med_route_mapping: pd.DataFrame, 
         , med_route_category: COALESCE(m.clif_med_route_category, m2.clif_med_route_category)
     """
     med_route_mapped = duckdb.sql(q)
-    logging.debug(f"len before: {len(med_events)}")
+    logging.debug(f"len before: {len(med_events_extracted)}")
     logging.debug(f"len after: {len(med_route_mapped)}")
-    assert len(med_route_mapped) == len(med_events), 'df length altered after mapping med route'
+    assert len(med_route_mapped) == len(med_events_extracted), 'df length altered after mapping med route'
     return med_route_mapped
 
-def mapped_and_augmented(med_route_mapped: duckdb.DuckDBPyRelation, med_admin_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
+def mapped_and_augmented(med_route_mapped: duckdb.DuckDBPyRelation, med_category_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
     find_intm_where_clause = """
     ordercategoryname = '05-Med Bolus'
         OR ordercategorydescription = 'Drug Push'
@@ -152,7 +176,7 @@ def mapped_and_augmented(med_route_mapped: duckdb.DuckDBPyRelation, med_admin_ma
                 OR (_item_class = 'BOTH' AND NOT ({find_intm_where_clause})) THEN 'cont'
             END
     FROM med_route_mapped e
-    LEFT JOIN med_admin_mapping m
+    LEFT JOIN med_category_mapping m
         ON e.itemid = m.itemid
         AND m.decision IN ('BOTH', 'CONTINUOUS', 'INTERMITTENT')
     WHERE _duration_in_mins > 0 -- remove the few cases where duration is zero or negative
@@ -161,8 +185,8 @@ def mapped_and_augmented(med_route_mapped: duckdb.DuckDBPyRelation, med_admin_ma
     mapped_and_augmented = duckdb.sql(query)
     if len(mapped_and_augmented) != 8511695:
         logging.warning(f'df length after augmentation and mapping is different from expected in last run')
-    if mapped_and_augmented['_to_table'].isna().sum() != 0:
-        logging.warning('there are still NAs in the column that determines the split to intermittent or continuous')
+    # if mapped_and_augmented['_to_table'].isna().sum() != 0:
+    #     logging.warning('there are still NAs in the column that determines the split to intermittent or continuous')
     return mapped_and_augmented
 
 def cont_only(mapped_and_augmented: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
@@ -212,7 +236,6 @@ def intm_reassembled(intm_only: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelat
     intm_reassembled = duckdb.sql(q)#.df()
     return intm_reassembled
 
-@tag(property="final")
 def intm_flattened(intm_reassembled: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
     logging.info("flattening timestamps in the intermittent table...")
     q = """
@@ -230,10 +253,58 @@ def intm_flattened(intm_reassembled: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPy
             ORDER BY admin_dttm
             ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
             )
+        , med_route_name
+        , med_route_category
     ORDER BY hospitalization_id, med_order_id, med_category, admin_dttm
     """
     intm_flattened = duckdb.sql(q)
     return intm_flattened
+
+def intm_med_group_mapping() -> pd.DataFrame:
+    q = """
+    FROM 'data/mcide/clif_medication_admin_intermittent_med_categories.csv'
+    SELECT med_category
+        , med_group
+        , n: COUNT(*) OVER (PARTITION BY med_category)
+    ORDER BY n DESC, med_category
+    """
+    intm_med_group_mapping = duckdb.sql(q).df()
+    return intm_med_group_mapping
+
+@tag(property="final")
+def intm_cast_w_med_group(intm_flattened: duckdb.DuckDBPyRelation, intm_med_group_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
+    q = """
+    FROM intm_flattened
+    LEFT JOIN intm_med_group_mapping USING (med_category)
+    SELECT hospitalization_id: CAST(hospitalization_id AS VARCHAR)
+        , med_order_id: CAST(med_order_id AS VARCHAR)
+        , med_name: CAST(med_name AS VARCHAR)
+        , med_category: CAST(med_category AS VARCHAR)
+        , admin_dttm: CAST(admin_dttm AS TIMESTAMP)
+        , mar_action_name: CAST(mar_action_name AS VARCHAR)
+        , mar_action_category: CAST(mar_action_category AS VARCHAR)
+        , med_dose: CAST(med_dose AS FLOAT)
+        , med_dose_unit: CAST(med_dose_unit AS VARCHAR)
+        , med_route_name: CAST(med_route_name AS VARCHAR)
+        , med_route_category: CAST(med_route_category AS VARCHAR)
+        , med_group: CAST(med_group AS VARCHAR)
+    """
+    intm_cast_w_med_group = duckdb.sql(q).df()
+    intm_cast_w_med_group['admin_dttm'] = convert_tz_to_utc(intm_cast_w_med_group['admin_dttm'])
+    # check length is not altered
+    assert len(intm_flattened) == len(intm_cast_w_med_group), 'length altered after casting and mapping med_group'
+    return intm_cast_w_med_group
+
+@datasaver()
+def save_intm(intm_cast_w_med_group: duckdb.DuckDBPyRelation) -> dict:
+    logging.info("saving to rclif...")
+    save_to_rclif(intm_cast_w_med_group, "medication_admin_intermittent")
+    metadata = {
+        "table_name": "medication_admin_intermittent"
+    }
+    
+    logging.info("output saved to a parquet file, everything completed for the medication_admin_intermittent table!")
+    return metadata
 
 def cont_reassembled(cont_only: duckdb.DuckDBPyRelation, long_intm_to_cont_table: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
     q = """
@@ -269,7 +340,7 @@ def cont_deduped_by_timestamps(cont_null_dose_rate_imputed: duckdb.DuckDBPyRelat
     logging.info(f"Removed {len(cont_null_dose_rate_imputed) - len(cont_deduped_by_timestamps)} rows")
     return cont_deduped_by_timestamps
 
-def cont_flattened(cont_reassembled: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
+def cont_flattened(cont_deduped_by_timestamps: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
     logging.info("flattening timestamps in the continuous table (from the start-end double timestamps to a single `admin_dttm`)...")
     q = """
     -- pivot to longer and create the fill-in [Started] and [Restarted] MAR actions from 'starttime'
@@ -300,17 +371,18 @@ def cont_flattened(cont_reassembled: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPy
             ELSE statusdescription END
         , med_dose: rate
         , med_dose_unit: rateuom
+        , med_route_name
+        , med_route_category
     ORDER BY hospitalization_id, med_order_id, med_category, admin_dttm, mar_action_name
     """
     cont_flattened = duckdb.sql(q)
     return cont_flattened
 
-def mar_action_dedup_mapping(cont_flattened: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
+def mar_action_dedup_mapping(cont_flattened: duckdb.DuckDBPyRelation) -> pd.DataFrame:
     return pd.read_csv(mapping_path_finder("mar_action_dedup"))
 
-@tag(property="final")
 def cont_deduped(cont_flattened: duckdb.DuckDBPyRelation, mar_action_dedup_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
-    logging.info("removing 'duplicates' that naturally occur as a result of flattening timestamps...")
+    logging.info("removing duplicated timestamps that naturally occur as a result of flattening timestamps...")
     q = """
     WITH base as (
         FROM cont_flattened
@@ -344,168 +416,116 @@ def cont_deduped(cont_flattened: duckdb.DuckDBPyRelation, mar_action_dedup_mappi
         OR mar_action_name_w_correct_dose IS NULL -- when there are no duplicates
     ORDER BY hospitalization_id, med_order_id, med_category, admin_dttm
     """
-    cont_deduped = duckdb.sql(q).df()
+    cont_deduped = duckdb.sql(q)#.df()
     logging.info(f"Removed {len(cont_flattened) - len(cont_deduped)} rows")
     return cont_deduped
 
-def _prepare_for_timestamp_flattening(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    [LIKELY DEPRECATED]
-    Prepare the dataframe for timestamp flattening by creating lead and lag.
-    """
-    query = f"""
-    SELECT subject_id, hadm_id
-        , linkorderid
-        , starttime, endtime 
-        , LEAD(starttime) OVER (PARTITION BY hadm_id, linkorderid, med_category ORDER BY starttime) AS starttime_next
-        , ROW_NUMBER() OVER (PARTITION BY hadm_id, linkorderid, med_category ORDER BY starttime) AS rn
-        , starttime = MIN(starttime) OVER (PARTITION BY hadm_id, linkorderid, med_category) AS is_first_row
-        , starttime = MAX(starttime) OVER (PARTITION BY hadm_id, linkorderid, med_category) AS is_last_row
-        , statusdescription
-        , LAG(statusdescription) OVER (PARTITION BY hadm_id, linkorderid, med_category ORDER BY starttime) AS statusdescription_prev
-        , med_category
-        , to_table
-        , EXTRACT(EPOCH FROM (endtime - starttime)) / 60 AS duration_in_mins
-        , amount / duration_in_mins AS rate_imputed
-        , CONCAT(amountuom, '/min') AS rateuom_imputed
-        , COALESCE(rate, rate_imputed) AS rate
-        , COALESCE(rateuom, rateuom_imputed) AS rateuom
-        , amount, amountuom
-        , patientweight
-        --, totalamount, totalamountuom, originalamount, originalrate
-        , ordercategoryname, ordercategorydescription
-        , itemid
-        , label
-        , item_class
-    FROM df
-    ORDER BY hadm_id, linkorderid, med_category, starttime, endtime
-    """
-    return duckdb.sql(query).df()
-
-def _remove_crossovers(df: pd.DataFrame) -> pd.DataFrame:
+def cont_med_group_mapping() -> pd.DataFrame:
     q = """
-    SELECT *
-        , LAG(endtime) OVER (PARTITION BY hadm_id, med_category, linkorderid ORDER BY starttime) AS endtime_prev
-        , starttime < endtime_prev AS crossover
-    FROM df
-    QUALIFY crossover is False
-    -- ORDER BY hadm_id, med_category, starttime, endtime, linkorderid
-    ORDER BY hadm_id, starttime, endtime, linkorderid, med_category
+    FROM 'data/mcide/clif_medication_admin_continuous_med_categories.csv'
+    SELECT med_category
+        , med_group
+        , n: COUNT(*) OVER (PARTITION BY med_category)
+        -- down-rank mapping to med_group that contain 'inhaled' (case-insensitive)
+        , rn: ROW_NUMBER() OVER (
+            PARTITION BY med_category
+            ORDER BY CASE WHEN med_group ILIKE '%inhale%' THEN 9 ELSE 1 END
+        )
+    QUALIFY rn = 1
+    ORDER BY n DESC, med_category, rn
     """
-    crossovers = duckdb.sql(q).df()
-    print(f"given there are only {len(crossovers)} cases, we might consider dropping them all")
+    cont_med_group_mapping = duckdb.sql(q).df()
+    return cont_med_group_mapping
 
-def _flatten_timestamps_staging(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
-    query = f"""
-    WITH l as (
-        SELECT hadm_id, linkorderid, med_category, starttime, statusdescription, rate, rateuom, med_route_category, label
-        FROM df -- WHERE linkorderid in (294375, 1771638)
-    ), r as (
-        SELECT hadm_id, linkorderid, med_category, endtime, statusdescription, rate, rateuom, med_route_category, label
-        FROM df -- WHERE linkorderid in (294375, 1771638)
-    )
-    -- the base table after full join
-    SELECT COALESCE(l.hadm_id, r.hadm_id) AS hospitalization_id
-        , COALESCE(l.linkorderid, r.linkorderid) AS med_order_id
-        , COALESCE(l.med_category, r.med_category) AS _med_category
-        , COALESCE(l.starttime, r.endtime) AS admin_dttm
-        , COALESCE(l.label, r.label) AS med_name
-        , l.starttime, r.endtime
-        , admin_dttm = MIN(admin_dttm) OVER (PARTITION BY hospitalization_id, med_order_id, _med_category) AS is_first_row
-        , admin_dttm = MAX(admin_dttm) OVER (PARTITION BY hospitalization_id, med_order_id, _med_category) AS is_last_row
-        , CASE WHEN is_first_row = 1 THEN COALESCE(r.statusdescription, '[Started]')
-            ELSE COALESCE(r.statusdescription, '[Restarted]') END as mar_action_name
-        , l.rate as med_dose
-        , l.rateuom as med_dose_unit
-    FROM l
-    FULL JOIN r
-    ON l.hadm_id = r.hadm_id
-        AND l.linkorderid = r.linkorderid
-        AND l.med_category = r.med_category
-        AND l.starttime = r.endtime
-    ORDER BY hospitalization_id, med_order_id, _med_category, admin_dttm
+@tag(property="final")
+def cont_cast_w_med_group(cont_deduped: duckdb.DuckDBPyRelation, cont_med_group_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
+    q = """
+    FROM cont_deduped
+    LEFT JOIN cont_med_group_mapping USING (med_category)
+    SELECT hospitalization_id: CAST(hospitalization_id AS VARCHAR)
+        , med_order_id: CAST(med_order_id AS VARCHAR)
+        , med_name: CAST(med_name AS VARCHAR)
+        , med_category: CAST(med_category AS VARCHAR)
+        , admin_dttm: CAST(admin_dttm AS TIMESTAMP)
+        , mar_action_name: CAST(mar_action_name AS VARCHAR)
+        , mar_action_category: CAST(mar_action_category AS VARCHAR)
+        , med_dose: CAST(med_dose AS FLOAT)
+        , med_dose_unit: CAST(med_dose_unit AS VARCHAR)
+        , med_group: CAST(med_group AS VARCHAR)
+        , med_route_name: CAST(med_route_name AS VARCHAR)
+        , med_route_category: CAST(med_route_category AS VARCHAR)
     """
-    return duckdb.sql(query).df()
+    cont_cast_w_med_group = duckdb.sql(q).df()
+    # check length is not altered
+    cont_cast_w_med_group['admin_dttm'] = convert_tz_to_utc(cont_cast_w_med_group['admin_dttm'])
+    assert len(cont_deduped) == len(cont_cast_w_med_group), 'length altered after casting and mapping med_group'
+    return cont_cast_w_med_group
 
-def _flatten_timestamps(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
-    """after staging. """
+@datasaver()
+def save_cont(cont_cast_w_med_group: duckdb.DuckDBPyRelation) -> dict:
+    logging.info("saving to rclif...")
+    save_to_rclif(cont_cast_w_med_group, "medication_admin_continuous")
     
-    query = f"""
-    -- the additional Starting rows for 'Paused' and 'FinishedRunning' to be joined back
-    WITH t1 as (
-        SELECT hospitalization_id, med_order_id, med_name, med_category: _med_category
-            , admin_dttm --, starttime, endtime
-            , mar_action_name: '[Restarted]' 
-            , med_dose
-            , med_dose_unit
-        FROM df
-        WHERE mar_action_name in ('Paused', 'FinishedRunning') 
-            AND med_dose IS NOT NULL
-    ), t2 as (
-        SELECT hospitalization_id, med_order_id, med_name, _med_category as med_category
-            , admin_dttm --, starttime, endtime
-            , mar_action_name
-            , med_dose: CASE 
-                WHEN mar_action_name in ('Paused', 'FinishedRunning') THEN 0
-                ELSE med_dose
-            END
-            , med_dose_unit
-        FROM df
-        UNION 
-        SELECT * FROM t1
-        ORDER BY hospitalization_id, med_order_id, med_category, admin_dttm
-    )
-    SELECT hospitalization_id
-        , med_order_id
-        , med_name
-        , med_category
-        , admin_dttm
-        , mar_action_name
-        , mar_action_category: CASE
-            WHEN mar_action_name in ('ChangeDose/Rate') THEN 'dose_change'
-            WHEN mar_action_name in ('[Started]', '[Restarted]') THEN 'start'
-            WHEN mar_action_name in ('FinishedRunning', 'Stopped', 'Paused', 'Bolus') THEN 'stop'
-            ELSE 'other' END
-        , med_dose: COALESCE(med_dose, 0)
-        , med_dose_unit: LAST_VALUE(med_dose_unit IGNORE NULLS) OVER (
-            PARTITION BY hospitalization_id, med_order_id, med_category 
-            ORDER BY admin_dttm
-            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-            )
-    FROM t2
-    """
-    return duckdb.sql(query).df()
+    metadata = {
+        "table_name": "medication_admin_continuous"
+    }
+    
+    logging.info("output saved to a parquet file, everything completed for the medication_admin_continuous table!")
+    return metadata
 
-def _flatten_timestamps_v1(df: pd.DataFrame, dose_name: Literal["rate", "amount"]) -> pd.DataFrame:
-    query = f"""
-    SELECT hadm_id as hospitalization_id
-        , linkorderid as med_order_id
-        , label as med_name
-        , med_category
-        , starttime AS admin_dttm
-        , CASE WHEN is_first_row = 1 THEN 'start' ELSE statusdescription_prev END AS mar_action_name
-        , {dose_name} AS med_dose
-        , {dose_name}uom as med_dose_unit
-    FROM df
-    UNION ALL
-    SELECT hadm_id as hospitalization_id
-        , linkorderid as med_order_id
-        , label as med_name
-        , med_category
-        , endtime AS admin_dttm
-        , statusdescription AS mar_action_name
-        , 0 AS med_dose
-        , {dose_name}uom as med_dose_unit
-    FROM df
-    WHERE is_last_row = 1 
-    ORDER BY hadm_id, linkorderid, med_category, admin_dttm
-    """
-    return duckdb.sql(query).df()
+@tag(property="test")
+def cont_schema_tested(cont_cast_w_med_group: duckdb.DuckDBPyRelation) -> bool | pa.errors.SchemaErrors:
+    try:
+        CONT_SCHEMA.validate(cont_cast_w_med_group, lazy=True)
+        return True
+    except pa.errors.SchemaErrors as exc:
+        logging.error(json.dumps(exc.message, indent=2))
+        logging.error("Schema errors and failure cases:")
+        logging.error(exc.failure_cases)
+        logging.error("\nDataFrame object that failed validation:")
+        logging.error(exc.data)
+        return exc
 
+@tag(property="test")
+def intm_schema_tested(intm_cast_w_med_group: duckdb.DuckDBPyRelation) -> bool | pa.errors.SchemaErrors:
+    try:
+        INTM_SCHEMA.validate(intm_cast_w_med_group, lazy=True)
+        return True
+    except pa.errors.SchemaErrors as exc:
+        logging.error(json.dumps(exc.message, indent=2))
+        logging.error("Schema errors and failure cases:")
+        logging.error(exc.failure_cases)
+        logging.error("\nDataFrame object that failed validation:")
+        logging.error(exc.data)
+        return exc
 
 def _main():
-    logging.info("starting to build clif medication_admin_continuous table -- ")
+    logging.info("starting to build clif medication_admin_continuous and medication_admin_intermittent tables -- ")
+    from hamilton import driver
+    import src.tables.medication_admin as medication_admin
+    setup_logging()
+    dr = (
+        driver.Builder()
+        .with_modules(medication_admin)
+        .build()
+    )
+    dr.execute(["save_cont", "save_intm"])
     
+def _test():
+    logging.info("testing all...")
+    from hamilton import driver
+    import src.tables.medication_admin as medication_admin
+    setup_logging()
+    dr = (
+        driver.Builder()
+        .with_modules(medication_admin)
+        .build()
+    )
+    all_nodes = dr.list_available_variables()
+    test_nodes = [node.name for node in all_nodes if 'test' == node.tags.get('property')]
+    output = dr.execute(test_nodes)
+    print(output)
+    return output
     
 if __name__ == "__main__":
     _main()
