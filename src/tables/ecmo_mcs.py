@@ -4,6 +4,9 @@ import pandas as pd
 import logging
 import duckdb
 from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
+from src.logging_config import setup_logging, get_logger
+
+logger = get_logger('tables.ecmo_mcs')
 import pandera.pandas as pa
 from pandera.dtypes import Float32
 from typing import Dict, List
@@ -13,9 +16,7 @@ import src.utils as utils
 # reload(utils)
 from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_csv, \
     get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
-    convert_and_sort_datetime, setup_logging, item_id_to_label, convert_tz_to_utc
-
-setup_logging()
+    convert_and_sort_datetime, item_id_to_label, convert_tz_to_utc
 
 CLIF_ECMO_SCHEMA = pa.DataFrameSchema(
     {
@@ -43,7 +44,7 @@ def ecmo_mapper(ecmo_mapping: pd.DataFrame) -> dict:
 
 def ecmo_item_ids(ecmo_mapping: pd.DataFrame) -> pd.Series:
     # FIXME: this might be off or redundant -- need to check
-    logging.info("parsing the mapping files to identify relevant items and fetch corresponding events...")
+    logger.info("parsing the mapping files to identify relevant items and fetch corresponding events...")
     return get_relevant_item_ids(
         mapping_df = ecmo_mapping, decision_col = "variable" 
         ) 
@@ -58,7 +59,7 @@ def duplicates_removed(extracted_ecmo_events: pd.DataFrame) -> pd.DataFrame:
     '''remove duplicates to prepare for pivoting'''
     # FIXME: the logic here is clearly off as the find_duplicates is not being used -- need to check
     ecmo_duplicates: pd.DataFrame = find_duplicates(extracted_ecmo_events)
-    logging.info(f"identified {len(ecmo_duplicates)} 'duplicated' events to be cleaned.")
+    logger.info(f"identified {len(ecmo_duplicates)} 'duplicated' events to be cleaned.")
     return extracted_ecmo_events.drop_duplicates()
 
 def ecmo_events_cleaned(duplicates_removed: pd.DataFrame) -> pd.DataFrame:
@@ -121,7 +122,7 @@ def coalesced(pivoted_wider: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def cleaned(coalesced: pd.DataFrame) -> pd.DataFrame:
-    logging.info("cleaning up column names and data types...")
+    logger.info("cleaning up column names and data types...")
     df = coalesced.loc[:, ['hospitalization_id', 'recorded_dttm', 'device_name', 'device_category', 'mcs_group', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdO2']]
     df['flow'] = df['flow'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
     df['sweep'] = df['sweep'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
@@ -200,30 +201,29 @@ def schema_tested(reordered: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
         CLIF_ECMO_SCHEMA.validate(reordered, lazy=True)
         return True
     except pa.errors.SchemaErrors as exc:
-        logging.error(json.dumps(exc.message, indent=2))
-        logging.error("Schema errors and failure cases:")
-        logging.error(exc.failure_cases)
-        logging.error("\nDataFrame object that failed validation:")
-        logging.error(exc.data)
+        logger.error(json.dumps(exc.message, indent=2))
+        logger.error("Schema errors and failure cases:")
+        logger.error(exc.failure_cases)
+        logger.error("\nDataFrame object that failed validation:")
+        logger.error(exc.data)
         return exc
 
 @datasaver()
 def save(reordered: pd.DataFrame) -> dict:
-    logging.info("saving to rclif...")
+    logger.info("saving to rclif...")
     save_to_rclif(reordered, "ecmo_mcs")
     
     metadata = {
         "table_name": "ecmo_mcs"
     }
     
-    logging.info("output saved to a parquet file, everything completed for the ecmo_mcs table!")
+    logger.info("output saved to a parquet file, everything completed for the ecmo_mcs table!")
     return metadata
 
 def _main():
-    logging.info("starting to build clif ecmo_mcs table -- ")
+    logger.info("starting to build clif ecmo_mcs table -- ")
     from hamilton import driver
     import src.tables.ecmo_mcs as ecmo_mcs
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(ecmo_mcs)
@@ -233,10 +233,9 @@ def _main():
     dr.execute(["save"])
 
 def _test():
-    logging.info("testing all...")
+    logger.info("testing all...")
     from hamilton import driver
     import src.tables.ecmo_mcs as ecmo_mcs
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(ecmo_mcs)
@@ -245,8 +244,9 @@ def _test():
     all_nodes = dr.list_available_variables()
     test_nodes = [node.name for node in all_nodes if 'test' == node.tags.get('property')]
     output = dr.execute(test_nodes)
-    print(output)
+    logger.debug(f"Test output: {output}")
     return output
 
 if __name__ == "__main__":
+    setup_logging()
     _main()

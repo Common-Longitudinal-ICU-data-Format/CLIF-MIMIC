@@ -5,9 +5,11 @@ import logging
 from functools import cache
 from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_csv, \
     get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
-    convert_and_sort_datetime, setup_logging, EXCLUDED_LABELS_DEFAULT, convert_tz_to_utc
+    convert_and_sort_datetime, EXCLUDED_LABELS_DEFAULT, convert_tz_to_utc
+from src.logging_config import setup_logging, get_logger
 
-setup_logging()
+logger = get_logger('tables.vitals')
+
 
 VITAL_COL_NAMES = ["hospitalization_id", "recorded_dttm", "vital_name", "vital_category", "vital_value", "meas_site_name"]
 
@@ -29,12 +31,12 @@ def convert_f_to_c(temp_f) -> float:
         raise("wrong type")
 
 def _main():
-    logging.info("starting to build clif vitals table -- ")
+    logger.info("starting to build clif vitals table -- ")
     vitals_mapping = load_mapping_csv("vitals")
     vital_name_mapper = construct_mapper_dict(vitals_mapping, "itemid", "label = vital_name")
     vital_category_mapper = construct_mapper_dict(vitals_mapping, "itemid", "vital_category")
 
-    logging.info("processing the standard cases (that do not need pivoting)")
+    logger.info("processing the standard cases (that do not need pivoting)")
     # find vital_items_ids
     vitals_items_ids = get_relevant_item_ids(
         mapping_df = vitals_mapping, decision_col = "vital_category", 
@@ -57,7 +59,7 @@ def _main():
     vitals_fd = vitals_final.drop_duplicates(
         subset = ["hospitalization_id", "recorded_dttm", "vital_category", "vital_value"])
     
-    logging.info("processing the special cases for temp_c")
+    logger.info("processing the special cases for temp_c")
     temp_events = fetch_mimic_events([223761, 223762, 224642])
     
     # pivot directly
@@ -82,20 +84,21 @@ def _main():
     temp_final = rename_and_reorder_cols(temp_wider, VITAL_COL_RENAME_MAPPER, VITAL_COL_NAMES)
     temp_final.dropna(subset=["vital_value"], inplace = True)
 
-    logging.info("merging the standard and special cases")
+    logger.info("merging the standard and special cases")
     vitals_m = pd.concat([vitals_final, temp_final])
     
     vitals_m.drop_duplicates(
         subset = ["hospitalization_id",	"recorded_dttm", "vital_category", "vital_value"], inplace = True)
 
-    logging.info("converting dtypes...")
+    logger.info("converting dtypes...")
     vitals_m["hospitalization_id"] = vitals_m["hospitalization_id"].astype("string")
     vitals_m["vital_value"] = vitals_m["vital_value"].astype(float)
     vitals_m["recorded_dttm"] = pd.to_datetime(vitals_m["recorded_dttm"])
     vitals_m["recorded_dttm"] = convert_tz_to_utc(vitals_m["recorded_dttm"])
     
     save_to_rclif(vitals_m, "vitals")
-    logging.info("output saved to a parquet file, everything completed for the vitals table!")
+    logger.info("output saved to a parquet file, everything completed for the vitals table!")
 
 if __name__ == "__main__":
+    setup_logging()
     _main()

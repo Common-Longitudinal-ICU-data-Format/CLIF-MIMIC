@@ -12,10 +12,11 @@ from importlib import reload
 import src.utils
 # reload(src.utils)
 from src.utils import construct_mapper_dict, load_mapping_csv, \
-    rename_and_reorder_cols, save_to_rclif, setup_logging, mimic_table_pathfinder, convert_tz_to_utc
+    rename_and_reorder_cols, save_to_rclif, mimic_table_pathfinder, convert_tz_to_utc
 from src.utils_qa import all_null_check
+from src.logging_config import setup_logging, get_logger
 
-setup_logging()
+logger = get_logger('tables.hospitalization')
 HOSP_COL_NAMES = [
     "patient_id", "hospitalization_id", "hospitalization_joined_id", "admission_dttm", "discharge_dttm",
     "age_at_admission", "admission_type_name", "admission_type_category",
@@ -104,7 +105,7 @@ def discharge_mapper(discharge_mapping: pd.DataFrame) -> Dict:
     return discharge_mapper
 
 def extracted_and_translated(discharge_mapper: Dict) -> pd.DataFrame:
-    logging.info("extracting and mapping columns...")
+    logger.info("extracting and mapping columns...")
     query = f"""
     SELECT 
         subject_id,
@@ -126,12 +127,12 @@ def extracted_and_translated(discharge_mapper: Dict) -> pd.DataFrame:
     return df
 
 def renamed_and_reordered(extracted_and_translated: pd.DataFrame) -> pd.DataFrame:
-    logging.info("renaming and reordering columns...")
+    logger.info("renaming and reordering columns...")
     return rename_and_reorder_cols(extracted_and_translated, HOSP_COL_RENAME_MAPPER, HOSP_COL_NAMES)
 
 @tag(property="final")
 def recast(renamed_and_reordered: pd.DataFrame) -> pd.DataFrame:
-    logging.info("recasting columns...")
+    logger.info("recasting columns...")
     df = renamed_and_reordered
     for col in df.columns:
         if "dttm" in col:
@@ -149,30 +150,29 @@ def schema_tested(recast: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
         CLIF_HOSP_SCHEMA.validate(recast, lazy=True)
         return True
     except pa.errors.SchemaErrors as exc:
-        logging.error(json.dumps(exc.message, indent=2))
-        logging.error("Schema errors and failure cases:")
-        logging.error(exc.failure_cases)
-        logging.error("\nDataFrame object that failed validation:")
-        logging.error(exc.data)
+        logger.error(json.dumps(exc.message, indent=2))
+        logger.error("Schema errors and failure cases:")
+        logger.error(exc.failure_cases)
+        logger.error("\nDataFrame object that failed validation:")
+        logger.error(exc.data)
         return exc
 
 @datasaver()
 def save(recast: pd.DataFrame) -> dict:
-    logging.info("saving to rclif...")
+    logger.info("saving to rclif...")
     save_to_rclif(recast, "hospitalization")
     
     metadata = {
         "table_name": "hospitalization"
     }
     
-    logging.info("output saved to a parquet file, everything completed for the hospitalization table!")
+    logger.info("output saved to a parquet file, everything completed for the hospitalization table!")
     return metadata
 
 def _main():
-    logging.info("starting to build clif hospitalization table -- ")
+    logger.info("starting to build clif hospitalization table -- ")
     from hamilton import driver
     import src.tables.hospitalization as hospitalization
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(hospitalization)
@@ -182,10 +182,9 @@ def _main():
     dr.execute(["save"])
 
 def _test():
-    logging.info("testing all...")
+    logger.info("testing all...")
     from hamilton import driver
     import src.tables.hospitalization as hospitalization
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(hospitalization)
@@ -194,8 +193,9 @@ def _test():
     all_nodes = dr.list_available_variables()
     test_nodes = [node.name for node in all_nodes if 'test' == node.tags.get('property')]
     output = dr.execute(test_nodes)
-    print(output)
+    logger.debug(f"Test output: {output}")
     return output
     
 if __name__ == "__main__":
+    setup_logging()
     _main()

@@ -6,6 +6,9 @@ import re
 import importlib 
 import duckdb
 from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
+from src.logging_config import setup_logging, get_logger
+
+logger = get_logger('tables.patient_procedures')
 import pandera.pandas as pa
 from pandera.dtypes import Float32
 from typing import Dict, List
@@ -20,13 +23,10 @@ from src.utils import (
     rename_and_reorder_cols,
     save_to_rclif,
     convert_and_sort_datetime,
-    setup_logging,
     convert_tz_to_utc,
     CLIF_DTTM_FORMAT,
     mimic_table_pathfinder
 )
-
-setup_logging()
 
 from src.utils_qa import all_null_check
 
@@ -47,7 +47,7 @@ SCHEMA = pa.DataFrameSchema(
 COLUMN_NAMES: List[str] = list(SCHEMA.columns.keys())
 
 def extracted_and_mapped_icd_codes() -> pd.DataFrame:
-    logging.info("extracting and mapping the ICD codes from MIMIC's `procedures_icd` table...")
+    logger.info("extracting and mapping the ICD codes from MIMIC's `procedures_icd` table...")
     q = f"""
     FROM '{mimic_table_pathfinder("procedures_icd")}' i
     SELECT hospitalization_id: CAST(i.hadm_id AS VARCHAR)
@@ -63,7 +63,7 @@ def extracted_and_mapped_icd_codes() -> pd.DataFrame:
     return duckdb.query(q).df()
 
 def extracted_and_mapped_cpt_hcpcs_codes() -> pd.DataFrame:
-    logging.info("extracting and mapping the CPT/HCPCS codes from MIMIC's `hcpcsevents` table...")
+    logger.info("extracting and mapping the CPT/HCPCS codes from MIMIC's `hcpcsevents` table...")
     q = f"""
     FROM '{mimic_table_pathfinder("hcpcsevents")}' h
     SELECT hospitalization_id: CAST(h.hadm_id AS VARCHAR)
@@ -90,7 +90,7 @@ def concated(
 ) -> pd.DataFrame:
     mimic_icd = extracted_and_mapped_icd_codes
     mimic_cpt_hcpcs = extracted_and_mapped_cpt_hcpcs_codes
-    logging.info("Concating the ICD codes and the CPT/HCPCS codes...")
+    logger.info("Concating the ICD codes and the CPT/HCPCS codes...")
     q = f"""
     FROM mimic_icd
     SELECT *
@@ -109,30 +109,29 @@ def schema_tested(concated: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
         SCHEMA.validate(concated, lazy=True)
         return True
     except pa.errors.SchemaErrors as exc:
-        logging.error(json.dumps(exc.message, indent=2))
-        logging.error("Schema errors and failure cases:")
-        logging.error(exc.failure_cases)
-        logging.error("\nDataFrame object that failed validation:")
-        logging.error(exc.data)
+        logger.error(json.dumps(exc.message, indent=2))
+        logger.error("Schema errors and failure cases:")
+        logger.error(exc.failure_cases)
+        logger.error("\nDataFrame object that failed validation:")
+        logger.error(exc.data)
         return exc
 
 @datasaver()
 def save(concated: pd.DataFrame) -> dict:
-    logging.info("saving to rclif...")
+    logger.info("saving to rclif...")
     save_to_rclif(concated, "patient_procedures")
     
     metadata = {
         "table_name": "patient_procedures"
     }
     
-    logging.info("output saved to a parquet file, everything completed for the patient procedures table!")
+    logger.info("output saved to a parquet file, everything completed for the patient procedures table!")
     return metadata
 
 def _main():
-    logging.info("starting to build clif patient procedures table -- ")
+    logger.info("starting to build clif patient procedures table -- ")
     from hamilton import driver
     import src.tables.patient_procedures as patient_procedures
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(patient_procedures)
@@ -142,10 +141,9 @@ def _main():
     dr.execute(["save"])
 
 def _test():
-    logging.info("testing all...")
+    logger.info("testing all...")
     from hamilton import driver
     import src.tables.patient_procedures as patient_procedures
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(patient_procedures)
@@ -154,8 +152,9 @@ def _test():
     all_nodes = dr.list_available_variables()
     test_nodes = [node.name for node in all_nodes if 'test' == node.tags.get('property')]
     output = dr.execute(test_nodes)
-    print(output)
+    logger.debug(f"Test output: {output}")
     return output
 
 if __name__ == "__main__":
+    setup_logging()
     _main()

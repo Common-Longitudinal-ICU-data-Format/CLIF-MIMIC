@@ -18,12 +18,12 @@ from src.utils import (
     rename_and_reorder_cols,
     save_to_rclif,
     convert_and_sort_datetime,
-    setup_logging,
     convert_tz_to_utc,
     mimic_table_pathfinder,
 )
+from src.logging_config import setup_logging, get_logger
 
-setup_logging()
+logger = get_logger('tables.patient')
 
 PATIENT_COL_NAMES = [
     "patient_id", "race_name", "race_category", "ethnicity_name", "ethnicity_category",
@@ -125,8 +125,8 @@ def _report_nonunique_race_ethn_across_encounters(df):
     n1 = (df2['unique_race_count'] > 1).sum() 
     n2 = (df2['unique_ethn_count'] > 1).sum()
     n_total = df.patient_id.nunique()
-    logging.info(f"number of patients with non-unique race: {n1} ({n1/n_total:.2%})")
-    logging.info(f"number of patients with non-unique ethnicity: {n2} ({n2/n_total:.2%})")
+    logger.info(f"number of patients with non-unique race: {n1} ({n1/n_total:.2%})")
+    logger.info(f"number of patients with non-unique ethnicity: {n2} ({n2/n_total:.2%})")
     return n1, n2
 
 def race_ethnicity_mapping() -> pd.DataFrame:
@@ -143,7 +143,7 @@ def ethnicity_mapper(race_ethnicity_mapping: pd.DataFrame) -> dict:
     return ethnicity_mapper
 
 def sex_translated() -> pd.DataFrame:
-    logging.info("fetching and processing the first component of the patient table: sex/gender data...")
+    logger.info("fetching and processing the first component of the patient table: sex/gender data...")
     # fetch sex (intended in CLIF) / gender (available in MIMIC) from mimic_patients
     query = f"""
     SELECT 
@@ -158,7 +158,7 @@ def sex_translated() -> pd.DataFrame:
     return duckdb.query(query).df()
 
 def race_ethn_translated(race_mapper: dict, ethnicity_mapper: dict) -> pd.DataFrame:
-    logging.info("fetching and processing the second component of the patient table: race and ethnicity data...")
+    logger.info("fetching and processing the second component of the patient table: race and ethnicity data...")
     query = f"""
     SELECT 
         subject_id as patient_id, 
@@ -234,7 +234,7 @@ def test_no_null_race_ethn_categories(race_ethn_cleaned: pd.DataFrame) -> bool:
     return race_ethn_cleaned.race_category.isna().sum() == 0 and race_ethn_cleaned.ethnicity_category.isna().sum() == 0
 
 def death_extracted() -> pd.DataFrame:
-    logging.info("fetching and processing the third component: death data...")
+    logger.info("fetching and processing the third component: death data...")
     q = f"""
     SELECT DISTINCT subject_id
         , deathtime
@@ -264,7 +264,7 @@ def death_extracted() -> pd.DataFrame:
     return death_joined
 
 def language_translated() -> pd.DataFrame:
-    logging.info("fetching and processing the fourth component: language data...")
+    logger.info("fetching and processing the fourth component: language data...")
     query = f"""
     SELECT 
         subject_id as patient_id,
@@ -282,7 +282,7 @@ def merged(
     death_extracted: pd.DataFrame, 
     language_translated: pd.DataFrame
     ) -> pd.DataFrame:
-    logging.info("merging the four components...")
+    logger.info("merging the four components...")
     query = """
     SELECT 
         CAST(patient_id AS string) as patient_id,
@@ -311,23 +311,23 @@ def duplicates_removed(merged: pd.DataFrame) -> pd.DataFrame:
 
 @tag(property="test")
 def schema_tested(duplicates_removed: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
-    logging.info("testing schema...")
+    logger.info("testing schema...")
     df = duplicates_removed
     try:
         CLIF_PATIENT_SCHEMA.validate(df, lazy=True)
         return True
     except pa.errors.SchemaErrors as exc:
-        logging.error(json.dumps(exc.message, indent=2))
-        logging.error("Schema errors and failure cases:")
-        logging.error(exc.failure_cases)
-        logging.error("\nDataFrame object that failed validation:")
-        logging.error(exc.data)
+        logger.error(json.dumps(exc.message, indent=2))
+        logger.error("Schema errors and failure cases:")
+        logger.error(exc.failure_cases)
+        logger.error("\nDataFrame object that failed validation:")
+        logger.error(exc.data)
         return exc
 
 @datasaver()
 def save(duplicates_removed: pd.DataFrame) -> dict:
     save_to_rclif(duplicates_removed, "patient")
-    logging.info("output saved to a parquet file, everything completed for the patient table!")
+    logger.info("output saved to a parquet file, everything completed for the patient table!")
     
     metadata = {
         "table_name": "patient"
@@ -336,10 +336,9 @@ def save(duplicates_removed: pd.DataFrame) -> dict:
     return metadata
 
 def _main():
-    logging.info("starting to build clif patient table -- ")
+    logger.info("starting to build clif patient table -- ")
     from hamilton import driver
     import src.tables.patient as patient
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(patient)
@@ -349,10 +348,9 @@ def _main():
     dr.execute(["save"])
    
 def _test():
-    logging.info("testing all...")
+    logger.info("testing all...")
     from hamilton import driver
     import src.tables.patient as patient
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(patient)
@@ -364,4 +362,5 @@ def _test():
     return output
 
 if __name__ == "__main__":
+    setup_logging()
     _main()

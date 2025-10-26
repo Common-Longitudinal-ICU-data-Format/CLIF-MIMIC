@@ -9,15 +9,16 @@ import src.utils
 # reload(src.utils)
 from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_csv, \
     get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
-    convert_and_sort_datetime, setup_logging, search_mimic_items, convert_tz_to_utc, \
+    convert_and_sort_datetime, search_mimic_items, convert_tz_to_utc, \
     mapping_path_finder
 from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
 import pandera.pandas as pa
 from pandera.dtypes import Float32
 from typing import Dict, List
 import json
+from src.logging_config import setup_logging, get_logger
 
-setup_logging()
+logger = get_logger('tables.medication_admin')
 
 CONT_MAR_ACTION_CATEGORIES = ['dose_change', 'start', 'stop', 'going', 'other']
 INTM_MAR_ACTION_CATEGORIES = ['given', 'other']
@@ -64,7 +65,7 @@ def med_category_mapping() -> pd.DataFrame:
     return load_mapping_csv("med_category")
 
 def med_item_ids(med_category_mapping: pd.DataFrame) -> pd.Series:
-    logging.info("identifying relevant items from the mapping file...")
+    logger.info("identifying relevant items from the mapping file...")
 
     return get_relevant_item_ids(
         mapping_df = med_category_mapping, 
@@ -73,9 +74,9 @@ def med_item_ids(med_category_mapping: pd.DataFrame) -> pd.Series:
         ) 
 
 def med_events_extracted(med_item_ids: pd.Series) -> pd.DataFrame:
-    logging.info("fetching corresponding events...")
+    logger.info("fetching corresponding events...")
     med_events = fetch_mimic_events(med_item_ids).pipe(convert_and_sort_datetime)
-    logging.info("removing extra whitespaces in the `ordercomponenttypedescription` column that disrupts later joins that need exact matching...")
+    logger.info("removing extra whitespaces in the `ordercomponenttypedescription` column that disrupts later joins that need exact matching...")
     med_events['ordercomponenttypedescription'] = med_events['ordercomponenttypedescription'].str.replace(r'\s+', ' ', regex=True).str.strip()
     return med_events
 
@@ -99,7 +100,7 @@ def med_route_mapping_by_id() -> pd.DataFrame:
     return duckdb.sql(q).df()
 
 def med_route_mapped(med_events_extracted: pd.DataFrame, med_route_mapping: pd.DataFrame, med_route_mapping_by_id: pd.DataFrame) -> duckdb.DuckDBPyRelation:
-    logging.info("mapping med route...")
+    logger.info("mapping med route...")
     q = """
     FROM med_events_extracted e
     LEFT JOIN med_route_mapping m
@@ -127,8 +128,8 @@ def med_route_mapped(med_events_extracted: pd.DataFrame, med_route_mapping: pd.D
         , med_route_category: COALESCE(m.clif_med_route_category, m2.clif_med_route_category)
     """
     med_route_mapped = duckdb.sql(q)
-    logging.debug(f"len before: {len(med_events_extracted)}")
-    logging.debug(f"len after: {len(med_route_mapped)}")
+    logger.debug(f"len before: {len(med_events_extracted)}")
+    logger.debug(f"len after: {len(med_route_mapped)}")
     assert len(med_route_mapped) == len(med_events_extracted), 'df length altered after mapping med route'
     return med_route_mapped
 
@@ -139,7 +140,7 @@ def mapped_and_augmented(med_route_mapped: duckdb.DuckDBPyRelation, med_category
         OR ordercategorydescription = 'Bolus'
         OR statusdescription = 'Bolus'
     """
-    logging.info("mapping med_category and adding helper columns to distinguish intermittent vs. continuous...")
+    logger.info("mapping med_category and adding helper columns to distinguish intermittent vs. continuous...")
     query = f"""
     SELECT subject_id, hadm_id
         , starttime, endtime --, storetime
@@ -181,13 +182,13 @@ def mapped_and_augmented(med_route_mapped: duckdb.DuckDBPyRelation, med_category
     """
     mapped_and_augmented = duckdb.sql(query)
     if len(mapped_and_augmented) != 8511695:
-        logging.warning(f'df length after augmentation and mapping is different from expected in last run')
+        logger.warning(f'df length after augmentation and mapping is different from expected in last run')
     # if mapped_and_augmented['_to_table'].isna().sum() != 0:
-    #     logging.warning('there are still NAs in the column that determines the split to intermittent or continuous')
+    #     logger.warning('there are still NAs in the column that determines the split to intermittent or continuous')
     return mapped_and_augmented
 
 def cont_only(mapped_and_augmented: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
-    logging.info("splitting into a separate table for continuous med...")
+    logger.info("splitting into a separate table for continuous med...")
     q = f"""
     SELECT *
     FROM mapped_and_augmented
@@ -199,7 +200,7 @@ def cont_only(mapped_and_augmented: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyR
     return cont_only
 
 def intm_only(mapped_and_augmented: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
-    logging.info("splitting into a separate table for intermittent med...")
+    logger.info("splitting into a separate table for intermittent med...")
     q = f"""
     SELECT *
     FROM mapped_and_augmented
@@ -211,7 +212,7 @@ def intm_only(mapped_and_augmented: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyR
     return intm_only
 
 def long_intm_to_cont_table(intm_only: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
-    logging.info("identifying some meds with longer than 1 min of duration in the intermittent table and moving them to the continuous table...")
+    logger.info("identifying some meds with longer than 1 min of duration in the intermittent table and moving them to the continuous table...")
     q = """
     SELECT *
     FROM intm_only
@@ -234,7 +235,7 @@ def intm_reassembled(intm_only: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelat
     return intm_reassembled
 
 def intm_flattened(intm_reassembled: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
-    logging.info("flattening timestamps in the intermittent table...")
+    logger.info("flattening timestamps in the intermittent table...")
     q = """
     FROM intm_reassembled
     SELECT hospitalization_id: hadm_id
@@ -270,7 +271,7 @@ def intm_med_group_mapping() -> pd.DataFrame:
 
 @tag(property="final")
 def intm_cast_w_med_group(intm_flattened: duckdb.DuckDBPyRelation, intm_med_group_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
-    logging.info("casting the dtypes and mapping med_group for the intermittent table... (this is the final step that materializes the table so might take longer)")
+    logger.info("casting the dtypes and mapping med_group for the intermittent table... (this is the final step that materializes the table so might take longer)")
     q = """
     FROM intm_flattened
     LEFT JOIN intm_med_group_mapping USING (med_category)
@@ -295,13 +296,13 @@ def intm_cast_w_med_group(intm_flattened: duckdb.DuckDBPyRelation, intm_med_grou
 
 @datasaver()
 def save_intm(intm_cast_w_med_group: duckdb.DuckDBPyRelation) -> dict:
-    logging.info("saving to rclif...")
+    logger.info("saving to rclif...")
     save_to_rclif(intm_cast_w_med_group, "medication_admin_intermittent")
     metadata = {
         "table_name": "medication_admin_intermittent"
     }
     
-    logging.info("output saved to a parquet file, everything completed for the medication_admin_intermittent table!")
+    logger.info("output saved to a parquet file, everything completed for the medication_admin_intermittent table!")
     return metadata
 
 def cont_reassembled(cont_only: duckdb.DuckDBPyRelation, long_intm_to_cont_table: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
@@ -314,7 +315,7 @@ def cont_reassembled(cont_only: duckdb.DuckDBPyRelation, long_intm_to_cont_table
     return cont_reassembled
 
 def cont_null_dose_rate_imputed(cont_reassembled: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
-    logging.info("imputing null dose rate in the continuous table as amount divided by duration...")
+    logger.info("imputing null dose rate in the continuous table as amount divided by duration...")
     q = """
     SELECT * REPLACE(
         COALESCE(rate, amount / _duration_in_mins) as rate
@@ -326,7 +327,7 @@ def cont_null_dose_rate_imputed(cont_reassembled: duckdb.DuckDBPyRelation) -> du
     return cont_null_dose_rate_imputed
 
 def cont_deduped_by_timestamps(cont_null_dose_rate_imputed: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
-    logging.info("Deduplicating entries with the same 'starttime' and 'endtime' in the continuous table...")
+    logger.info("Deduplicating entries with the same 'starttime' and 'endtime' in the continuous table...")
     q = """
     SELECT *
     FROM cont_null_dose_rate_imputed
@@ -335,11 +336,11 @@ def cont_deduped_by_timestamps(cont_null_dose_rate_imputed: duckdb.DuckDBPyRelat
     ) = 1
     """
     cont_deduped_by_timestamps = duckdb.sql(q)
-    logging.info(f"Removed {len(cont_null_dose_rate_imputed) - len(cont_deduped_by_timestamps)} rows")
+    logger.info(f"Removed {len(cont_null_dose_rate_imputed) - len(cont_deduped_by_timestamps)} rows")
     return cont_deduped_by_timestamps
 
 def cont_flattened(cont_deduped_by_timestamps: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
-    logging.info("flattening timestamps in the continuous table (from the start-end double timestamps to a single `admin_dttm`)...")
+    logger.info("flattening timestamps in the continuous table (from the start-end double timestamps to a single `admin_dttm`)...")
     q = """
     -- pivot to longer and create the fill-in [Started] and [Restarted] MAR actions from 'starttime'
     WITH longer as (
@@ -380,7 +381,7 @@ def mar_action_dedup_mapping(cont_flattened: duckdb.DuckDBPyRelation) -> pd.Data
     return pd.read_csv(mapping_path_finder("mar_action_dedup"))
 
 def cont_deduped(cont_flattened: duckdb.DuckDBPyRelation, mar_action_dedup_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
-    logging.info("removing duplicated timestamps that naturally occur as a product of timestamp flattening...")
+    logger.info("removing duplicated timestamps that naturally occur as a product of timestamp flattening...")
     q = """
     WITH base as (
         FROM cont_flattened
@@ -417,7 +418,7 @@ def cont_deduped(cont_flattened: duckdb.DuckDBPyRelation, mar_action_dedup_mappi
     ORDER BY hospitalization_id, med_order_id, med_category, admin_dttm
     """
     cont_deduped = duckdb.sql(q)#.df()
-    logging.info(f"Removed {len(cont_flattened) - len(cont_deduped)} rows")
+    logger.info(f"Removed {len(cont_flattened) - len(cont_deduped)} rows")
     return cont_deduped
 
 def cont_med_group_mapping() -> pd.DataFrame:
@@ -439,7 +440,7 @@ def cont_med_group_mapping() -> pd.DataFrame:
 
 @tag(property="final")
 def cont_cast_w_med_group(cont_deduped: duckdb.DuckDBPyRelation, cont_med_group_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
-    logging.info("casting the dtypes and mapping med_group for the continuous table... (this is the final step that materializes the table so might take longer)")
+    logger.info("casting the dtypes and mapping med_group for the continuous table... (this is the final step that materializes the table so might take longer)")
     q = """
     FROM cont_deduped
     LEFT JOIN cont_med_group_mapping USING (med_category)
@@ -464,14 +465,14 @@ def cont_cast_w_med_group(cont_deduped: duckdb.DuckDBPyRelation, cont_med_group_
 
 @datasaver()
 def save_cont(cont_cast_w_med_group: duckdb.DuckDBPyRelation) -> dict:
-    logging.info("saving to rclif...")
+    logger.info("saving to rclif...")
     save_to_rclif(cont_cast_w_med_group, "medication_admin_continuous")
     
     metadata = {
         "table_name": "medication_admin_continuous"
     }
     
-    logging.info("output saved to a parquet file, everything completed for the medication_admin_continuous table!")
+    logger.info("output saved to a parquet file, everything completed for the medication_admin_continuous table!")
     return metadata
 
 @tag(property="test")
@@ -480,11 +481,11 @@ def cont_schema_tested(cont_cast_w_med_group: duckdb.DuckDBPyRelation) -> bool |
         CONT_SCHEMA.validate(cont_cast_w_med_group, lazy=True)
         return True
     except pa.errors.SchemaErrors as exc:
-        logging.error(json.dumps(exc.message, indent=2))
-        logging.error("Schema errors and failure cases:")
-        logging.error(exc.failure_cases)
-        logging.error("\nDataFrame object that failed validation:")
-        logging.error(exc.data)
+        logger.error(json.dumps(exc.message, indent=2))
+        logger.error("Schema errors and failure cases:")
+        logger.error(exc.failure_cases)
+        logger.error("\nDataFrame object that failed validation:")
+        logger.error(exc.data)
         return exc
 
 @tag(property="test")
@@ -493,18 +494,17 @@ def intm_schema_tested(intm_cast_w_med_group: duckdb.DuckDBPyRelation) -> bool |
         INTM_SCHEMA.validate(intm_cast_w_med_group, lazy=True)
         return True
     except pa.errors.SchemaErrors as exc:
-        logging.error(json.dumps(exc.message, indent=2))
-        logging.error("Schema errors and failure cases:")
-        logging.error(exc.failure_cases)
-        logging.error("\nDataFrame object that failed validation:")
-        logging.error(exc.data)
+        logger.error(json.dumps(exc.message, indent=2))
+        logger.error("Schema errors and failure cases:")
+        logger.error(exc.failure_cases)
+        logger.error("\nDataFrame object that failed validation:")
+        logger.error(exc.data)
         return exc
 
 def _main():
-    logging.info("starting to build clif medication_admin_continuous and medication_admin_intermittent tables -- ")
+    logger.info("starting to build clif medication_admin_continuous and medication_admin_intermittent tables -- ")
     from hamilton import driver
     import src.tables.medication_admin as medication_admin
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(medication_admin)
@@ -513,10 +513,9 @@ def _main():
     dr.execute(["save_cont", "save_intm"])
     
 def _test():
-    logging.info("testing all...")
+    logger.info("testing all...")
     from hamilton import driver
     import src.tables.medication_admin as medication_admin
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(medication_admin)
@@ -525,8 +524,9 @@ def _test():
     all_nodes = dr.list_available_variables()
     test_nodes = [node.name for node in all_nodes if 'test' == node.tags.get('property')]
     output = dr.execute(test_nodes)
-    print(output)
+    logger.debug(f"Test output: {output}")
     return output
     
 if __name__ == "__main__":
+    setup_logging()
     _main()
