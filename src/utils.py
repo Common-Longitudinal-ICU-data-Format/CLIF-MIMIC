@@ -191,14 +191,14 @@ def clif_table_pathfinder(table_name: str) -> str:
         # if it is an empty str (not specified by user), use the default syntax
         CLIF_OUTPUT_DIR_NAME = f"rclif-{CLIF_VERSION}"
     clif_path = (
-        SCRIPT_DIR / f"../output/{CLIF_OUTPUT_DIR_NAME}/clif_{table_name}.parquet"
-    ) # e.g. '../output/rclif-2.0/clif_adt.parquet'
+        SCRIPT_DIR / f"{REPO_ROOT}/output/{CLIF_OUTPUT_DIR_NAME}/clif_{table_name}.parquet"
+    ) # e.g. 'CLIF-MIMIC/output/rclif-2.0/clif_adt.parquet'
     return str(clif_path)
 
 def clif_test_data_pathfinder(table_name: str) -> str:
     clif_path = (
-        SCRIPT_DIR / f"../tests/fixtures/test_{table_name}.csv"
-    ) # e.g. '../tests/fixtures/test_patient.csv'
+        SCRIPT_DIR / f"{REPO_ROOT}/tests/fixtures/test_{table_name}.csv"
+    ) # e.g. 'CLIF-MIMIC/tests/fixtures/test_patient.csv'
     return str(clif_path)
 
 def save_to_rclif(df: pd.DataFrame, table_name: str):
@@ -217,7 +217,7 @@ def read_from_rclif(table_name):
 # ----------------------
 
 def mapping_path_finder(csv_name: str):
-    return SCRIPT_DIR / f"../data/mappings/mimic-to-clif-mappings - {csv_name}.csv"
+    return f"{REPO_ROOT}/data/mappings/mimic-to-clif-mappings - {csv_name}.csv"
 
 def load_mapping_csv(csv_name: str, dtype=None):
     return pd.read_csv(
