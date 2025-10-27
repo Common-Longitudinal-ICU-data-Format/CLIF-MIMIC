@@ -46,11 +46,12 @@ def _main():
     adt_final = rename_and_reorder_cols(adt, ADT_COL_RENAME_MAPPER, ADT_COL_NAMES)
     adt_final["patient_id"] = adt_final["patient_id"].astype("string")
     adt_final['hospitalization_id'] = adt_final['hospitalization_id'].astype(int).astype("string")
-    adt_final['hospital_id'] = adt_final['hospital_id'].astype("string")
+    adt_final['hospital_id'] = 'mimic'
     adt_final['in_dttm'] = pd.to_datetime(adt_final['in_dttm'])
     adt_final['in_dttm'] = convert_tz_to_utc(adt_final['in_dttm'])
     adt_final['out_dttm'] = pd.to_datetime(adt_final['out_dttm'])
     adt_final['out_dttm'] = convert_tz_to_utc(adt_final['out_dttm'])
+    adt_final['hospital_type'] = 'academic'
 
     save_to_rclif(adt_final, "adt")
     logger.info("output saved to a parquet file, everything completed for the adt table!")
