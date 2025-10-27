@@ -29,17 +29,13 @@ from src.utils import (
 from src.utils_qa import all_null_check
 
 def _permitted_lab_categories() -> List[str]:
-    # clif_labs_mcide = pd.read_csv("https://raw.githubusercontent.com/Common-Longitudinal-ICU-data-Format/CLIF/refs/heads/main/mCIDE/clif_lab_categories.csv")
     clif_labs_mcide = pd.read_csv("data/mcide/clif_lab_categories.csv")
     return clif_labs_mcide["lab_category"].unique()
 
 CLIF_LABS_SCHEMA = pa.DataFrameSchema(
     {
         "hospitalization_id": pa.Column(str, nullable=False),
-        "lab_order_dttm": pa.Column(
-            pd.DatetimeTZDtype(unit="ns", tz="UTC"), 
-            checks=[all_null_check],
-            nullable=True),
+        "lab_order_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False),
         "lab_collect_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False),
         "lab_result_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False), 
         "lab_order_name": pa.Column(str, checks=[all_null_check], nullable=True),
@@ -192,6 +188,8 @@ def merged(le_labs_units_converted: pd.DataFrame, ce_labs_renamed_reordered: pd.
     logger.info("merging lab events...")
     merged = pd.concat([le_labs_units_converted, ce_labs_renamed_reordered])
     merged.drop(columns = "itemid", inplace = True)
+    # use the same timestamp for lab_order_dttm as lab_collect_dttm
+    merged['lab_order_dttm'] = merged['lab_collect_dttm']
     return merged
 
 @cache(format="parquet")
@@ -218,7 +216,7 @@ def duplicates_removed(null_result_dttm_removed: pd.DataFrame) -> pd.DataFrame:
     df = null_result_dttm_removed
     logger.info("starting duplicates removal...")
     df.drop_duplicates(
-        subset=["hospitalization_id", "lab_collect_dttm", "lab_result_dttm", 
+        subset=["hospitalization_id", "lab_order_dttm", "lab_collect_dttm", "lab_result_dttm", 
                 "lab_category", "lab_value_numeric"],
         inplace=True
     )
