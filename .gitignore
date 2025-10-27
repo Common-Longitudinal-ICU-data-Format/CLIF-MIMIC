@@ -19,6 +19,7 @@ __marimo__/
 
 .hamilton_cache/
 ._*
+.dev/
 
 # data
 mimic-data/
