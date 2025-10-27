@@ -30,7 +30,7 @@ from src.utils import (
 
 from src.utils_qa import all_null_check
 
-CODE_STATUS_CATEGORIES = ['DNR', 'DNAR', 'UDNR', 'DNR/DNI', 'DNAR/DNI', 'AND', 'Full', 'Presume Full', 'Other']
+CODE_STATUS_CATEGORIES = ['DNR', 'DNAR', 'UDNR', 'DNR/DNI', 'DNAR/DNI', 'AND', 'Full', 'Presume Full', 'Other', 'DNI_only']
 
 SCHEMA = pa.DataFrameSchema(
     {
@@ -60,7 +60,8 @@ def mapped_and_cast(extracted_events: pd.DataFrame) -> pd.DataFrame:
         , code_status_name: CAST(e.value AS VARCHAR)
         , code_status_category: CASE
             WHEN code_status_name in ('Full code') THEN 'Full'
-            WHEN code_status_name in ('DNR / DNI', 'DNI (do not intubate)') THEN 'DNR/DNI'
+            WHEN code_status_name in ('DNR / DNI') THEN 'DNR/DNI'
+            WHEN code_status_name in ('DNI (do not intubate)') THEN 'DNI_only'
             WHEN code_status_name in ('DNR (do not resuscitate)') THEN 'DNR'
             WHEN code_status_name in ('Comfort measures only') THEN 'AND' END
     """
