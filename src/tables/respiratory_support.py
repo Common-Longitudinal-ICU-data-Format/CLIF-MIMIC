@@ -355,7 +355,7 @@ def tracheostomy_imputed(renamed_reordered_recasted: pd.DataFrame) -> pd.DataFra
     )
     renamed_reordered_recasted.rename(columns={"tracheostomy": "trach_performed"}, inplace=True)
     renamed_reordered_recasted["trach_implied"] = (
-        renamed_reordered_recasted["device_name"].isin(["Tracheostomy tube", "Trach mask"])
+        renamed_reordered_recasted["device_name"].str.strip().isin(["Tracheostomy tube", "Trach mask"])
     ) | (renamed_reordered_recasted["trach_performed"] == 1)
     renamed_reordered_recasted["trach_bool"] = renamed_reordered_recasted.groupby("hospitalization_id")[
         "trach_implied"
