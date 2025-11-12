@@ -1,10 +1,12 @@
 # MIMIC-IV-Ext-CLIF
-> *Your title should be no longer than 200 characters. Avoid acronyms and abbreviations where possible. Also avoid leading with "The". Only letters, numbers, spaces, underscores, and hyphens are allowed.*
-> - *If your dataset is derived from MIMIC and you would like to use the MIMIC acronym, please include the letters "Ext" (for example, MIMIC-IV-Ext-YOUR-DATASET"). Ext may either indicate "extracted" (e.g. a derived subset) or "extended" (e.g. annotations), depending on your use case.*
-> - *If the dataset is derived from another dataset, the title must make this clear.*
+> *Your title should be no longer than 200 characters. Avoid acronyms and abbreviations where possible. Also avoid leading with "The". Only letters, numbers, spaces, underscores, and hyphens are allowed.* 
+> 
+> *If your dataset is derived from MIMIC and you would like to use the MIMIC acronym, please include the letters "Ext" (for example, MIMIC-IV-Ext-YOUR-DATASET"). Ext may either indicate "extracted" (e.g. a derived subset) or "extended" (e.g. annotations), depending on your use case.*
+> 
+> *If the dataset is derived from another dataset, the title must make this clear.*
 
 
-Zewei Liao, Shan Guleria, Kevin Smith, Rachel Baccile, Kaveri Chhikara, Dema Therese, Vaishvik Chaudhari, Michael Burkhart, Brett Beaulieu-Jones, Snigdha Jain, Katie Connell, Kevin Buell,Juan C. Rojas, Patrick G. Lyons, Sivasubramanium V. Bhavani, Catherine A. Gao, Anna K. Barker, Chad H. Hochberg, Nicholas E. Ingraham, William F. Parker
+Zewei Liao, Shan Guleria, Kevin Smith, Rachel Baccile, Kaveri Chhikara, Dema Therese, Vaishvik Chaudhari, Michael Burkhart, Brett Beaulieu-Jones, Snigdha Jain, Katie Connell, Kevin Buell, Juan C. Rojas, Patrick G. Lyons, Sivasubramanium V. Bhavani, Catherine A. Gao, Anna K. Barker, Chad H. Hochberg, Nicholas E. Ingraham, William F. Parker
 
 
 # Abstract
@@ -129,7 +131,7 @@ Detailed release notes can be found in the [CHANGELOG](https://github.com/Common
 
 We thank the MIMIC team at MIT Laboratory for Computational Physiology and Beth Israel Deaconess Medical Center for creating and maintaining the MIMIC-IV database, without which this public CLIF implementation would not be possible. We acknowledge PhysioNet for hosting and distributing critical care datasets that enable reproducible research worldwide.
 
-Dr. Lyons is supported by NIH/NCI K08CA270383. Dr. Rojas is supported by NIH/NIDA R01DA051464 and the Robert Wood Johnson Foundation and has received consulting fees from Truveta. Dr. Bhavani is supported by NIH/NIGMS K23GM144867. Dr. Gao is supported by NIH/NHLBI K23HL169815, a Parker B. Francis Opportunity Award, and an American Thoracic Society Unrestricted Grant. Dr. Hochberg is supported by NIH/NHLBI K23HL169743. Dr. Ingraham is supported by NIH/NHLBI K23HL166783. Dr. Barker is supported by an institutional research training grant (NIH/NHLBI T32 HL 00774). Dr. Parker is supported by NIH K08HL150291, R01LM014263, and the Greenwall Foundation. 
+Dr. Lyons is supported by NIH/NCI K08CA270383. Dr. Rojas is supported by NIH/NIDA R01DA051464 and the Robert Wood Johnson Foundation and has received consulting fees from Truveta. Dr. Buell is supported by an institutional research training grant (NIH/NHLBI T32 HL007605). Dr. Bhavani is supported by NIH/NIGMS K23GM144867. Dr. Gao is supported by NIH/NHLBI K23HL169815, a Parker B. Francis Opportunity Award, and an American Thoracic Society Unrestricted Grant. Dr. Hochberg is supported by NIH/NHLBI K23HL169743. Dr. Ingraham is supported by NIH/NHLBI K23HL166783. Dr. Barker is supported by an institutional research training grant (NIH/NHLBI T32 HL 007749). Dr. Parker is supported by NIH K08HL150291, R01LM014263, and the Greenwall Foundation. 
 
 
 # Conflicts Of Interest
