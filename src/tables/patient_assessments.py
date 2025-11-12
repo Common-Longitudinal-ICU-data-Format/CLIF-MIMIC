@@ -4,16 +4,19 @@ import pandas as pd
 import logging
 import duckdb
 from importlib import reload
+from src.logging_config import setup_logging, get_logger
+
+logger = get_logger('tables.patient_assessments')
 import src.utils
 # reload(src.utils)
 from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_csv, \
     get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
-    convert_and_sort_datetime, setup_logging, con, REPO_ROOT, mimic_table_pathfinder, \
+    convert_and_sort_datetime, con, REPO_ROOT, mimic_table_pathfinder, \
     convert_tz_to_utc
 from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
-import pandera as pa
+import pandera.pandas as pa
+from pandera.dtypes import Float32
 import json
-setup_logging()
 
 PA_COL_NAMES = [
     "hospitalization_id", "recorded_dttm", "assessment_name", "assessment_category",
@@ -27,7 +30,7 @@ PA_SCHEMA = pa.DataFrameSchema(
         "assessment_name": pa.Column(str, nullable=False),
         "assessment_category": pa.Column(str, nullable=False),
         "assessment_group": pa.Column(str, nullable=False),
-        "numerical_value": pa.Column(float, nullable=True),
+        "numerical_value": pa.Column(Float32, nullable=True),
         "categorical_value": pa.Column(str, nullable=True),
         "text_value": pa.Column(str, nullable=True),
     }
@@ -42,14 +45,14 @@ def hadmid_to_stayid() -> pd.DataFrame:
     return con.execute(query).fetchdf()
 
 def gcs_fetched(hadmid_to_stayid: pd.DataFrame) -> pd.DataFrame:
-    logging.info("executing official MIMIC script to fetch GCS data...")
+    logger.info("executing official MIMIC script to fetch GCS data...")
     gcs_sql_path = REPO_ROOT / 'src/tables/patient_assessments_gcs.sql'
     with open(str(gcs_sql_path), 'r') as file:
         gcs_sql_script = file.read()
     query = gcs_sql_script.format(chartevents = mimic_table_pathfinder("chartevents"))
     gcs = con.execute(query).fetchdf()
     
-    logging.info("pivoting and cleaning GCS data...")
+    logger.info("pivoting and cleaning GCS data...")
     gcs_c = pd.merge(
         gcs, hadmid_to_stayid, on = "stay_id", how = "left"
     )
@@ -69,7 +72,7 @@ def gcs_fetched(hadmid_to_stayid: pd.DataFrame) -> pd.DataFrame:
 
 
 def rass_fetched() -> pd.DataFrame:
-    logging.info("fetching RASS data...")
+    logger.info("fetching RASS data...")
     rass_events = fetch_mimic_events([228096])
     rass_events = convert_and_sort_datetime(rass_events)
     rass_events['numerical_value'] = rass_events['value'].str.slice(0,3).astype(float)
@@ -87,7 +90,7 @@ def rass_fetched() -> pd.DataFrame:
     return rass_events_clean
 
 def braden_fetched() -> pd.DataFrame:
-    logging.info("fetching Braden data...")
+    logger.info("fetching Braden data...")
     braden = fetch_mimic_events([224054, 224055, 224056, 224057, 224058, 224059])
     query = f"""
     PIVOT braden
@@ -197,7 +200,7 @@ def braden_fetched() -> pd.DataFrame:
     return braden_mf
 
 def cam_extracted() -> pd.DataFrame:
-    logging.info("fetching CAM data...")
+    logger.info("fetching CAM data...")
     return fetch_mimic_events(
         [228300, 228337, 229326, 228301, 228336, 229325, 228302, 228334, 228303, 228335, 229324]
     )
@@ -292,7 +295,7 @@ def sbt_id_to_category_mapper() -> dict:
     }
 
 def sbt_extracted() -> pd.DataFrame:
-    logging.info("fetching SBT data...")
+    logger.info("fetching SBT data...")
     return fetch_mimic_events([224717, 224833, 224716]) 
 
 def sbt_translated(sbt_id_to_category_mapper: dict, sbt_extracted: pd.DataFrame) -> pd.DataFrame:
@@ -307,7 +310,7 @@ def sbt_fetched(sbt_translated: pd.DataFrame) -> pd.DataFrame:
         time as recorded_dttm,
         label as assessment_name,
         assessment_category,
-        CAST(NULL as DOUBLE) as numerical_value,
+        CAST(NULL as FLOAT) as numerical_value,
         CASE WHEN assessment_category = 'sbt_delivery_pass_fail' 
             THEN (CASE WHEN value = 'Yes' THEN 'Pass' 
                 WHEN value = 'No' THEN 'Fail' 
@@ -335,22 +338,21 @@ def sbt_tested(sbt_fetched: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
         nullable=True
     )
     
-    logging.info("testing schema...")
+    logger.info("testing schema...")
     try:
         assessment_category_schema.validate(sbt_fetched["assessment_category"], lazy=True)
         categorical_value_schema.validate(sbt_fetched["categorical_value"], lazy=True)
         return True
     except pa.errors.SchemaErrors as exc:
-        logging.error(json.dumps(exc.message, indent=2))
-        logging.error("Schema errors and failure cases:")
-        logging.error(exc.failure_cases)
-        logging.error("\nDataFrame object that failed validation:")
-        logging.error(exc.data)
+        logger.error(json.dumps(exc.message, indent=2))
+        logger.error("Schema errors and failure cases:")
+        logger.error(exc.failure_cases)
+        logger.error("\nDataFrame object that failed validation:")
+        logger.error(exc.data)
         return exc
  
 def pa_category_to_group_mapper() -> dict:
-    pa_mcide_url = "https://raw.githubusercontent.com/clif-consortium/CLIF/main/mCIDE/clif_patient_assessment_categories.csv"
-    pa_mcide_mapping = pd.read_csv(pa_mcide_url)
+    pa_mcide_mapping = pd.read_csv("data/mcide/clif_patient_assessment_categories.csv")
     pa_category_to_group_mapper = dict(
         zip(pa_mcide_mapping["assessment_category"], pa_mcide_mapping["assessment_group"]))
     return pa_category_to_group_mapper
@@ -363,9 +365,9 @@ def merged_and_cleaned(
     braden_fetched: pd.DataFrame, 
     cam_fetched: pd.DataFrame, 
     sbt_fetched: pd.DataFrame) -> pd.DataFrame:
-    logging.info("merging all of the above...")
+    logger.info("merging all of the above...")
     df = pd.concat([gcs_fetched, rass_fetched, braden_fetched, cam_fetched, sbt_fetched])
-    logging.info("converting column dtypes...")
+    logger.info("converting column dtypes...")
     df["hospitalization_id"] = df["hospitalization_id"].astype("string")
     df["categorical_value"] = df["categorical_value"].astype("string")
     df["recorded_dttm"] = pd.to_datetime(df["recorded_dttm"])
@@ -375,35 +377,34 @@ def merged_and_cleaned(
 
 @tag(property="test")
 def schema_tested(merged_and_cleaned: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
-    logging.info("testing schema...")
+    logger.info("testing schema...")
     try:
         PA_SCHEMA.validate(merged_and_cleaned, lazy=True)
         return True
     except pa.errors.SchemaErrors as exc:
-        logging.error(json.dumps(exc.message, indent=2))
-        logging.error("Schema errors and failure cases:")
-        logging.error(exc.failure_cases)
-        logging.error("\nDataFrame object that failed validation:")
-        logging.error(exc.data)
+        logger.error(json.dumps(exc.message, indent=2))
+        logger.error("Schema errors and failure cases:")
+        logger.error(exc.failure_cases)
+        logger.error("\nDataFrame object that failed validation:")
+        logger.error(exc.data)
         return exc
     
 @datasaver()
 def save(merged_and_cleaned: pd.DataFrame) -> dict:
-    logging.info("saving to rclif...")
+    logger.info("saving to rclif...")
     save_to_rclif(merged_and_cleaned, "patient_assessments")
     
     metadata = {
         "table_name": "patient_assessments"
     }
     
-    logging.info("output saved to a parquet file, everything completed for the patient assessments table!")
+    logger.info("output saved to a parquet file, everything completed for the patient assessments table!")
     return metadata
 
 def _main():
-    logging.info("starting to build clif patient assessments table -- ")
+    logger.info("starting to build clif patient assessments table -- ")
     from hamilton import driver
     import src.tables.patient_assessments as patient_assessments
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(patient_assessments)
@@ -413,10 +414,9 @@ def _main():
     dr.execute(["save"])
 
 def _test():
-    logging.info("testing all...")
+    logger.info("testing all...")
     from hamilton import driver
     import src.tables.patient_assessments as patient_assessments
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(patient_assessments)
@@ -425,9 +425,10 @@ def _test():
     all_nodes = dr.list_available_variables()
     test_nodes = [node.name for node in all_nodes if 'test' == node.tags.get('property')]
     output = dr.execute(test_nodes)
-    print(output)
+    logger.debug(f"Test output: {output}")
     return output
 
 if __name__ == "__main__":
+    setup_logging()
     _main()
 

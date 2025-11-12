@@ -1,0 +1,13 @@
+patient_id,race_name,race_category,ethnicity_name,ethnicity_category,sex_name,sex_category,birth_date,death_dttm,language_name,language_category,finalized,rationale
+10049782,BLACK/AFRICAN AMERICAN,Black or African American,BLACK/AFRICAN AMERICAN,Non-Hispanic,F,Female,,,English,,need to add death_dttm,use most-frequent race over multiple encounters
+10942097,WHITE,White,WHITE,Non-Hispanic,F,Female,,,English,,need to add death_dttm,"in a tie, use the most recent encounter"
+10005236,WHITE - OTHER EUROPEAN,White,WHITE - OTHER EUROPEAN,Non-Hispanic,M,Male,,,English,,1,Unknown race should be disregarded
+10016673,HISPANIC/LATINO - MEXICAN,Other,HISPANIC/LATINO - MEXICAN,Hispanic,F,Female,,,English,,1,Hispanic
+10015931,WHITE,White,WHITE,Non-Hispanic,M,Male,,2177-03-29 14:15:00,English,,1,death_dttm
+10017492,PATIENT DECLINED TO ANSWER,Unknown,PATIENT DECLINED TO ANSWER,Unknown,M,Male,,2116-07-05 08:05:00,Other,,1,death + non-informative race & lang
+10006513,HISPANIC/LATINO - DOMINICAN,Other,HISPANIC/LATINO - DOMINICAN,Hispanic,,,,,,,,
+10304619,HISPANIC/LATINO - PUERTO RICAN,Other,HISPANIC/LATINO - PUERTO RICAN,Hispanic,,,,,,,,
+10617011,HISPANIC/LATINO - PUERTO RICAN,Other,HISPANIC/LATINO - PUERTO RICAN,Hispanic,,,,,,,,
+10360391,,,,,,,,,,,,
+10375831,,,,,,,,,,,,
+11066451,,,,,,,,,,,,

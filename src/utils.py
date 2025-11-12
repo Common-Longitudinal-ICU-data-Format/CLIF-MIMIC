@@ -6,7 +6,9 @@ import json
 from pathlib import Path
 from functools import cache
 import duckdb  # type: ignore
+from src.logging_config import setup_logging, get_logger
 
+logger = get_logger('utils')
 con = duckdb.connect()
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
@@ -15,7 +17,7 @@ def load_config():
     json_path = SCRIPT_DIR / "../config/config.json"
     with open(json_path, "r") as file:
         config = json.load(file)
-    print(f"loaded configuration from {json_path}")
+    logger.info(f"loaded configuration from {json_path}")
     return config
 
 config = load_config()
@@ -83,28 +85,13 @@ MIMIC_TABLES_NEEDED_FOR_CLIF = [
     "ingredientevents",
     "inputevents",
     "outputevents",
-    "procedureevents"
+    "procedureevents",
+    "hcpcsevents",
+    "procedures_icd",
+    "diagnoses_icd"
 ]
 
 CLIF_DTTM_FORMAT = "YYYY-MM-DD HH:MM:SS+00:00"
-
-def setup_logging(log_file: str = "logs/etl.log"):
-    """
-    Sets up logging for the ETL pipeline.
-
-    Args:
-        log_file (str): Path to the log file. 
-    """
-    # create a log file at the given path if it does not exist yet
-    if not Path(log_file).parent.exists():
-        Path(log_file).parent.mkdir(parents=True)
-    
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
-    )
-    logging.info(f"initialized logging at {log_file}")
 
 # -----------
 #     I/O
@@ -130,7 +117,7 @@ def mimic_table_pathfinder(table: str, data_format: str = "parquet") -> str:
     elif table in ICU_TABLES:
         module = "icu"
     else:
-        raise ValueError(f"Table not found: {table}")    
+        raise ValueError(f"This table name for MIMIC is not found: {table}. Please check for typo.")    
     
     # first check the dir structure of the parquet path -- whether the parquet files are (1) stored together 
     # under the same directory or (2) seperated into two subdirectories by modules as is the case for csv
@@ -157,10 +144,10 @@ def resave_mimic_table_from_csv_to_parquet(table: str, overwrite: bool = False):
         if not overwrite:
             raise FileExistsError(f"{table}.parquet already exists at {mimic_table_pathfinder(table, data_format='parquet')}. Set overwrite = True to overwrite it.")
         else:
-            logging.info(f"overwriting {table}.parquet that already exists at {mimic_table_pathfinder(table, data_format='parquet')}.")
+            logger.info(f"overwriting {table}.parquet that already exists at {mimic_table_pathfinder(table, data_format='parquet')}.")
     
     # resave the table from csv to parquet using duckdb
-    logging.info(f"resaving {table} from .csv.gz to .parquet using duckdb...")
+    logger.info(f"resaving {table} from .csv.gz to .parquet using duckdb...")
     query = f"""
     COPY (
         SELECT * 
@@ -169,7 +156,7 @@ def resave_mimic_table_from_csv_to_parquet(table: str, overwrite: bool = False):
     TO '{str(mimic_table_pathfinder(table, data_format='parquet'))}' (FORMAT 'PARQUET');
     """
     con.execute(query)
-    logging.info(f"finished resaving {table} from .csv.gz to .parquet!")
+    logger.info(f"finished resaving {table} from .csv.gz to .parquet!")
     
 def resave_select_mimic_tables_from_csv_to_parquet(tables: list[str], overwrite: bool = False):
     '''
@@ -178,24 +165,24 @@ def resave_select_mimic_tables_from_csv_to_parquet(tables: list[str], overwrite:
     - overwrite: if True, will overwrite existing parquet files under the same name; otherwise, 
     a FileExistsError will be raised, and we will skip to the next table.
     '''
-    logging.info(f"converting the following {len(tables)} mimic tables from csv to parquet: {tables}")
+    logger.info(f"converting the following {len(tables)} mimic tables from csv to parquet: {tables}")
     # first check which tables are already converted to parquet by checking the parquet dir
     counter = 0
     for table in tables:
         counter += 1
-        logging.info(f"resaving table {counter} out of {len(tables)}:")
+        logger.info(f"resaving table {counter} out of {len(tables)}:")
         try: 
             resave_mimic_table_from_csv_to_parquet(table, overwrite = overwrite)
         except FileExistsError as e:
-            logging.info(e)
+            logger.info(e)
             continue
-    logging.info(f"finished resaving all {len(tables)} tables from .csv.gz to .parquet!")
+    logger.info(f"finished resaving all {len(tables)} tables from .csv.gz to .parquet!")
 
 def resave_all_mimic_tables_from_csv_to_parquet(overwrite: bool = False):
     '''
     Resave all MIMIC tables from csv to parquet.
     '''
-    logging.info(f"resaving all {len(HOSP_TABLES + ICU_TABLES)} tables from .csv.gz to .parquet.")
+    logger.info(f"resaving all {len(HOSP_TABLES + ICU_TABLES)} tables from .csv.gz to .parquet.")
     resave_select_mimic_tables_from_csv_to_parquet(HOSP_TABLES + ICU_TABLES, overwrite = overwrite)
 
 def clif_table_pathfinder(table_name: str) -> str:
@@ -204,14 +191,14 @@ def clif_table_pathfinder(table_name: str) -> str:
         # if it is an empty str (not specified by user), use the default syntax
         CLIF_OUTPUT_DIR_NAME = f"rclif-{CLIF_VERSION}"
     clif_path = (
-        SCRIPT_DIR / f"../output/{CLIF_OUTPUT_DIR_NAME}/clif_{table_name}.parquet"
-    ) # e.g. '../output/rclif-2.0/clif_adt.parquet'
+        SCRIPT_DIR / f"{REPO_ROOT}/output/{CLIF_OUTPUT_DIR_NAME}/clif_{table_name}.parquet"
+    ) # e.g. 'CLIF-MIMIC/output/rclif-2.0/clif_adt.parquet'
     return str(clif_path)
 
 def clif_test_data_pathfinder(table_name: str) -> str:
     clif_path = (
-        SCRIPT_DIR / f"../data/test-data/test_{table_name}.csv"
-    ) # e.g. '../data/test-data/test_patient.csv'
+        SCRIPT_DIR / f"{REPO_ROOT}/tests/fixtures/test_{table_name}.csv"
+    ) # e.g. 'CLIF-MIMIC/tests/fixtures/test_patient.csv'
     return str(clif_path)
 
 def save_to_rclif(df: pd.DataFrame, table_name: str):
@@ -219,7 +206,7 @@ def save_to_rclif(df: pd.DataFrame, table_name: str):
     # check if the directory exists, if not, create it
     if not Path(output_path).parent.exists():
         Path(output_path).parent.mkdir(parents=True)
-    logging.info(f"saving {table_name} rclif table as a parquet file at {output_path}.")
+    logger.info(f"saving {table_name} rclif table as a parquet file at {output_path}.")
     return df.to_parquet(output_path, index=False)
 
 def read_from_rclif(table_name):
@@ -229,9 +216,12 @@ def read_from_rclif(table_name):
 #   ETL - mapping
 # ----------------------
 
+def mapping_path_finder(csv_name: str):
+    return f"{REPO_ROOT}/data/mappings/mimic-to-clif-mappings - {csv_name}.csv"
+
 def load_mapping_csv(csv_name: str, dtype=None):
     return pd.read_csv(
-        SCRIPT_DIR / f"../data/mappings/mimic-to-clif-mappings - {csv_name}.csv",
+        mapping_path_finder(csv_name),
         dtype=dtype,
     )
 
@@ -381,11 +371,11 @@ def item_id_to_feature_value(df: pd.DataFrame, item_id: int, col: str = "label")
     row = df.loc[df["itemid"] == item_id, :]
     label = row["label"].values[0]
     if col == "label":
-        logging.info(f"the {col} for item {item_id} is {label}")
+        logger.info(f"the {col} for item {item_id} is {label}")
         return label
     else:
         feature_value = row[col].values[0]
-        logging.info(f"the {col} for item {item_id} ({label}) is {feature_value}")
+        logger.info(f"the {col} for item {item_id} ({label}) is {feature_value}")
         return feature_value
 
 
@@ -456,16 +446,18 @@ def fetch_mimic_events_by_eventtable(
     """
     Fetch all the events associated with a list of item ids from a given event table.
     """
-    logging.info(f"fetching events from {table_name} table for {len(item_ids)} items")
+    logger.info(f"fetching events from {table_name} table for {len(item_ids)} items")
     if original:
         cols = "*"
     elif table_name == "chartevents":
         cols = "itemid, label, hadm_id, stay_id, charttime as time, value, valueuom"
     elif table_name == "procedureevents":
         cols = "itemid, label, hadm_id, stay_id, endtime as time, value, valueuom"
+    elif table_name == "inputevents":
+        cols = "*"
     else:
         cols = "*"
-        logging.warning(f"{table_name} not yet supported, thus returning all columns")
+        logger.warning(f"{table_name} not yet supported, thus returning all columns")
     query = f"""
     SELECT {cols}
     FROM '{mimic_table_pathfinder(table_name)}' 
@@ -473,7 +465,7 @@ def fetch_mimic_events_by_eventtable(
     WHERE itemid IN ({','.join(map(str, item_ids))})
     """
     df = con.execute(query).fetchdf()
-    logging.info(
+    logger.info(
         f"fetched {len(df)} events from {table_name} table for {len(item_ids)} items"
     )
     return df
@@ -493,7 +485,7 @@ def fetch_mimic_events(item_ids: list[int], original: bool = False, for_labs: bo
         df = con.execute(query).fetchdf()
         return df
     else:
-        logging.info(
+        logger.info(
             f"querying the d_items table to identify which event tables to be separately queried for {len(item_ids)} items"
         )
         query = f"""
@@ -503,7 +495,7 @@ def fetch_mimic_events(item_ids: list[int], original: bool = False, for_labs: bo
         """
         df = con.execute(query).fetchdf()
         eventtable_to_itemids_mapper = df.groupby("linksto")["itemid"].apply(list).to_dict()
-        logging.info(
+        logger.info(
             f"identified {len(eventtable_to_itemids_mapper)} event tables to be separately queried: {list(eventtable_to_itemids_mapper.keys())}"
         )
         df_list = [
@@ -511,7 +503,7 @@ def fetch_mimic_events(item_ids: list[int], original: bool = False, for_labs: bo
             for table_name, item_ids in eventtable_to_itemids_mapper.items()
         ]
         df_m = pd.concat(df_list)
-        logging.info(
+        logger.info(
             f"concatenated {len(df_m)} events from {len(eventtable_to_itemids_mapper)} event table(s)"
         )
         return df_m
@@ -708,7 +700,8 @@ def search_mimic_items(kw, col: str = "label", case_sensitive: bool = False, for
     '''
     Search for items by keyword in the `d_items` table.
     '''
-    logging.info(f"searching for items with keyword '{kw}' in column '{col}' with case sensitive = {case_sensitive}.")
+    logger.info("--------------------------------")
+    logger.info(f"searching for items with keyword '{kw}' in column '{col}' with case sensitive = {case_sensitive}.")
     kw_condition = f"{col} {'LIKE' if case_sensitive else 'ILIKE'} '%{kw}%'"
     query = f"""
     SELECT itemid, linksto
@@ -718,25 +711,26 @@ def search_mimic_items(kw, col: str = "label", case_sensitive: bool = False, for
     df = con.execute(query).fetchdf()
     # check if there is any match
     if len(df) == 0:
-        logging.warning(f"No match for '{kw}' in column '{col}' with case sensitive = {case_sensitive}.")
-        return pd.DataFrame()
-    eventtable_to_itemids_mapper = df.groupby("linksto")["itemid"].apply(list).to_dict()
-    logging.info(
-        f"identified {len(eventtable_to_itemids_mapper)} event tables to be separately queried: {list(eventtable_to_itemids_mapper.keys())}"
-    )
-    df_list = [
-        generate_item_stats_by_eventtable(item_ids, table_name)
-        for table_name, item_ids in eventtable_to_itemids_mapper.items()
-    ]
-    df_m = pd.concat(df_list).sort_values(by="count", ascending=False)
-    df_m["kw"] = kw
-    # move the kw column to the front
-    df_m = df_m[["kw"] + [col for col in df_m.columns if col != "kw"]]
-        
-    logging.info(
-        f"Found and concatenated {len(df_m)} items from across {len(eventtable_to_itemids_mapper)} event table(s)"
-    )
-    return df_m
+        logger.warning(f"No match for '{kw}' in column '{col}' with case sensitive = {case_sensitive}.")
+        return pd.DataFrame({"kw": [kw]})
+    else:
+        eventtable_to_itemids_mapper = df.groupby("linksto")["itemid"].apply(list).to_dict()
+        logger.info(
+            f"identified {len(eventtable_to_itemids_mapper)} event tables to be separately queried: {list(eventtable_to_itemids_mapper.keys())}"
+        )
+        df_list = [
+            generate_item_stats_by_eventtable(item_ids, table_name)
+            for table_name, item_ids in eventtable_to_itemids_mapper.items()
+        ]
+        df_m = pd.concat(df_list).sort_values(by="count", ascending=False)
+        df_m["kw"] = kw
+        # move the kw column to the front
+        df_m = df_m[["kw"] + [col for col in df_m.columns if col != "kw"]]
+            
+        logger.info(
+            f"Found and concatenated {len(df_m)} items from across {len(eventtable_to_itemids_mapper)} event table(s)"
+        )
+        return df_m
 
 class ItemFinder:
     """
@@ -776,7 +770,7 @@ class ItemFinder:
                     f"No matching result found in column {col} with case sensitive being {case_sensitive}"
                 )
             else:
-                logging.warning(
+                logger.warning(
                     f"No matching result for {kw} in column {col} with case sensitive being {case_sensitive}"
                 )
                 self.candidate_table = pd.DataFrame()
@@ -784,7 +778,7 @@ class ItemFinder:
         # ... only proceed when the return is not of zero length
         # and enhance the simple raw output with counts and value instances
         else:
-            logging.info(
+            logger.info(
                 f"{len(self.items_select_df)} matching item(s) found for {self.kw}."
             )
             # list of ids for items that match the key words
@@ -792,7 +786,7 @@ class ItemFinder:
             # a np array of non-duplicated events table names, e.g. ["chartevents", "procedureevents"]
             self.linksto_table_names = self.items_select_df["linksto"].unique()
             self.item_freq = self.generate_item_freq()
-            # logging.info(f"type is {type(self.item_freq)}")
+            # logger.info(f"type is {type(self.item_freq)}")
             self.candidate_table = self.make_candidate_table()
 
     def generate_item_freq(self):
@@ -877,7 +871,7 @@ def item_id_to_value_instances(item_id: int):
         val_instances = item_id_to_value_instances_categorical(item_id).to_dict()
     else:
         return param_type
-    print(f"item label: {label}; value instances: {str(val_instances)}")
+    logger.debug(f"item label: {label}; value instances: {str(val_instances)}")
     return str(val_instances)
 
 

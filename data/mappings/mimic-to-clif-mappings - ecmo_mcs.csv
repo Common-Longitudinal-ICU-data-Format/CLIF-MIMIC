@@ -1,0 +1,231 @@
+variable,itemid,label,abbreviation,linksto,category,unitname,param_type
+,229549,Avalon Dressing Change,Avalon Dressing Change,datetimeevents,Access Lines - Invasive,,Date and time
+,229550,Avalon Insertion Date,Avalon Insertion Date,datetimeevents,Access Lines - Invasive,,Date and time
+,229552,Avalon Line Discontinued,Avalon Line Discontinued,chartevents,Access Lines - Invasive,,Text
+,229553,Avalon Line Site Appear,Avalon Line Site Appear,chartevents,Access Lines - Invasive,,Text
+,229554,Avalon Position,Avalon Position,chartevents,Access Lines - Invasive,,Text
+,229515,Avalon/Protek Duo/Crescent,Avalon/Protek Duo/Crescent,procedureevents,Access Lines - Invasive,,Processes
+,229527,Centrimag Inflow Line,Centrimag Inflow Line,procedureevents,Access Lines - Invasive,,Processes
+,229528,Centrimag Outflow Line,Centrimag Outflow Line,procedureevents,Access Lines - Invasive,,Processes
+,229529,ECMO Inflow Line,ECMO Inflow Line,procedureevents,Access Lines - Invasive,,Processes
+,229530,ECMO Outflow Line,ECMO Outflow Line,procedureevents,Access Lines - Invasive,,Processes
+,225981,IABP Alarms Activated,IABP Alarms Activated,chartevents,Access Lines - Invasive,,Checkbox
+,225341,IABP Art. Waveform Appear,IABP Art. Waveform Appear,chartevents,Access Lines - Invasive,,Text
+,225986,IABP Arterial Waveform Source,IABP Arterial Waveform Source,chartevents,Access Lines - Invasive,,Text
+,225982,IABP Balloon Waveform,IABP Balloon Waveform,chartevents,Access Lines - Invasive,,Text
+,225335,IABP Cap Change,IABP Cap Change,datetimeevents,Access Lines - Invasive,,Date and time
+,225336,IABP Change over Wire Date,IABP Change over Wire Date,datetimeevents,Access Lines - Invasive,,Date and time
+,225337,IABP Dressing Change,IABP Dressing Change,datetimeevents,Access Lines - Invasive,,Date and time
+,227355,IABP Dressing Occlusive,IABP Dressing Occlusive,chartevents,Access Lines - Invasive,,Checkbox
+,225985,IABP Helium Tubing,IABP Helium Tubing,chartevents,Access Lines - Invasive,,Text
+,225338,IABP Insertion Date,IABP Insertion Date,datetimeevents,Access Lines - Invasive,,Date and time
+,224272,IABP line,IABP line,procedureevents,Access Lines - Invasive,,Processes
+,225742,IABP Line Discontinued,IABP Line Discontinued,chartevents,Access Lines - Invasive,,Text
+,225727,IABP Line Tip Cultured,IABP Line Tip Cultured,chartevents,Access Lines - Invasive,,Checkbox
+,226110,IABP placed in outside facility,IABP placed in outside facility,chartevents,Access Lines - Invasive,,Checkbox
+,225988,IABP Position on leg,IABP Position on leg,chartevents,Access Lines - Invasive,,Text
+,225987,IABP Power Source,IABP Power Source,chartevents,Access Lines - Invasive,,Text
+,225339,IABP Site Appear,IABP Site Appear,chartevents,Access Lines - Invasive,,Text
+,225979,IABP Size,IABP Size,chartevents,Access Lines - Invasive,,Text
+,225984,IABP Trigger,IABP Trigger,chartevents,Access Lines - Invasive,,Text
+,225340,IABP Tubing Change,IABP Tubing Change,datetimeevents,Access Lines - Invasive,,Date and time
+,225980,IABP Volume,IABP Volume,chartevents,Access Lines - Invasive,mL,Numeric
+,225342,IABP Zero/Calibrate,IABP Zero/Calibrate,chartevents,Access Lines - Invasive,,Checkbox
+,228160,Impella Aortic Pressure Tubing Change,Impella Aortic Pressure Tubing Change,datetimeevents,Access Lines - Invasive,,Date and time
+,228162,Impella Catheter Position,Impella Catheter Position,chartevents,Access Lines - Invasive,cm,Numeric
+,228163,Impella Catheter Repositioned,Impella Catheter Repositioned,chartevents,Access Lines - Invasive,,Checkbox
+,228164,Impella Catheter Site,Impella Catheter Site,chartevents,Access Lines - Invasive,,Text
+,228165,Impella Daily Tubing Change,Impella Daily Tubing Change,datetimeevents,Access Lines - Invasive,,Date and time
+,228166,Impella Dressing Change,Impella Dressing Change,datetimeevents,Access Lines - Invasive,,Date and time
+,228167,Impella Dressing Occlusive,Impella Dressing Occlusive,chartevents,Access Lines - Invasive,,Checkbox
+,228168,Impella Insertion Date,Impella Insertion Date,datetimeevents,Access Lines - Invasive,,Date and time
+,228169,Impella Line,Impella Line,procedureevents,Access Lines - Invasive,,Processes
+,228170,Impella Line Discontinued,Impella Line Discontinued,chartevents,Access Lines - Invasive,,Text
+,228174,Impella Line Site Appear,Impella Line Site Appear,chartevents,Access Lines - Invasive,,Text
+,229680,Impella Line Type,Impella Line Type,chartevents,Access Lines - Invasive,,Text
+,228171,Impella Placement Confirmed,Impella Placement Confirmed,chartevents,Access Lines - Invasive,,Text
+,228173,Impella Position,Impella Position,chartevents,Access Lines - Invasive,,Text
+,228172,Impella Postion Confirmed,Impella Position Confirmed,chartevents,Access Lines - Invasive,,Text
+,228203,Tandem Heart Access Line Cannula Site,Tandem Heart Access Line Cannula Site,chartevents,Access Lines - Invasive,,Text
+,228204,Tandem Heart Access Line Catheter Length,Tandem Heart Access Line Catheter Length,chartevents,Access Lines - Invasive,cm,Numeric
+,228206,Tandem Heart Access Line Discontinued,Tandem Heart Access Line Discontinued,chartevents,Access Lines - Invasive,,Text
+,228207,Tandem Heart Access Line Dressing Change,Tandem Heart Access Line Dressing Change,datetimeevents,Access Lines - Invasive,,Date and time
+,228208,Tandem Heart Access Line Dressing Occlusive,Tandem Heart Access Line Dressing Occlusive_201612,chartevents,Access Lines - Invasive,,Checkbox
+,228209,Tandem Heart Access Line Insertion Date,Tandem Heart Access Line Insertion Date,datetimeevents,Access Lines - Invasive,,Date and time
+,228210,Tandem Heart Access Line Position,Tandem Heart Access Line Position,chartevents,Access Lines - Invasive,,Text
+,228211,Tandem Heart Access Line Postion Confirmed,Tandem Heart Access Line Position Confirmed,chartevents,Access Lines - Invasive,,Text
+,228212,Tandem Heart Access Line Pump Housing Checked,Tandem Heart Access Line Pump Housing Checked,chartevents,Access Lines - Invasive,,Checkbox
+,228213,Tandem Heart Access Line Repositioned,Tandem Heart Access Line Repositioned,chartevents,Access Lines - Invasive,,Checkbox
+,228214,Tandem Heart Access Line Site Appear,Tandem Heart Access Line Site Appear,chartevents,Access Lines - Invasive,,Text
+,228215,Tandem Heart Access Line Tubing Change,Tandem Heart Access Line Tubing Change,datetimeevents,Access Lines - Invasive,,Date and time
+,228216,Tandem Heart Access Line Type,Tandem Heart Access Line Type,chartevents,Access Lines - Invasive,,Text
+,228201,Tandem Heart Inflow Line,Tandem Heart Inflow Line,procedureevents,Access Lines - Invasive,,Processes
+,228202,Tandem Heart Outflow Line,Tandem Heart Outflow Line,procedureevents,Access Lines - Invasive,,Processes
+,228217,Tandem Heart Return Cannula Discontinued,Tandem Heart Return Cannula Discontinued,chartevents,Access Lines - Invasive,,Text
+,228218,Tandem Heart Return Cannula Dressing Change,Tandem Heart Return Cannula Dressing Change,datetimeevents,Access Lines - Invasive,,Date and time
+,228219,Tandem Heart Return Cannula Dressing Occlusive,Tandem Heart Return Cannula Dressing Occlusive_201,chartevents,Access Lines - Invasive,,Checkbox
+,228221,Tandem Heart Return Cannula Insertion Date,Tandem Heart Return Cannula Insertion Date,datetimeevents,Access Lines - Invasive,,Date and time
+,228222,Tandem Heart Return Cannula Migration,Tandem Heart Return Cannula Migration,chartevents,Access Lines - Invasive,,Checkbox
+,228223,Tandem Heart Return Cannula Position,Tandem Heart Return Cannula Position,chartevents,Access Lines - Invasive,,Text
+,228224,Tandem Heart Return Cannula Repositioned,Tandem Heart Return Cannula Repositioned,chartevents,Access Lines - Invasive,,Checkbox
+,228225,Tandem Heart Return Cannula Site,Tandem Heart Return Cannula Site,chartevents,Access Lines - Invasive,,Text
+,228226,Tandem Heart Return Cannula Site Appear,Tandem Heart Return Cannula Site Appear,chartevents,Access Lines - Invasive,,Text
+,228227,Tandem Heart Return Cannula Size,Tandem Heart Return Cannula Size,chartevents,Access Lines - Invasive,,Text
+,229250,Cannula sites visually inspected (LVAD),Cannula sites visually inspected (LVAD),chartevents,Centrimag,,Text
+,229251,Cannula sites visually inspected (RVAD),Cannula sites visually inspected (RVAD),chartevents,Centrimag,,Text
+,229252,Emergency Equipment at bedside (LVAD),Emergency Equipment at bedside (LVAD),chartevents,Centrimag,,Text
+,229253,Emergency Equipment at bedside (RVAD),Emergency Equipment at bedside (RVAD),chartevents,Centrimag,,Text
+flow,229254,Flow (LVAD),Flow (LVAD),chartevents,Centrimag,L/min,Numeric
+flow,229255,Flow (RVAD),Flow (RVAD),chartevents,Centrimag,L/min,Numeric
+,229256,Flow Alarm (Hi) (LVAD),Flow Alarm (Hi) (LVAD),chartevents,Centrimag,,Numeric
+,229257,Flow Alarm (Hi) (RVAD),Flow Alarm (Hi) (RVAD),chartevents,Centrimag,,Numeric
+,229258,Flow Alarm (Lo) (LVAD),Flow Alarm (Lo) (LVAD),chartevents,Centrimag,,Numeric
+,229259,Flow Alarm (Lo) (RVAD),Flow Alarm (Lo) (RVAD),chartevents,Centrimag,,Numeric
+,229260,Flow Sensor repositioned (LVAD),Flow Sensor repositioned (LVAD),chartevents,Centrimag,,Text
+,229261,Flow Sensor repositioned (RVAD),Flow Sensor repositioned (RVAD),chartevents,Centrimag,,Text
+device_rate,229262,Speed (LVAD),Speed (LVAD),chartevents,Centrimag,RPM,Numeric
+device_rate,229263,Speed (RVAD),Speed (RVAD),chartevents,Centrimag,RPM,Numeric
+,229264,Suction events (LVAD),Suction events (LVAD),chartevents,Centrimag,,Text
+,229265,Suction events (RVAD),Suction events (RVAD),chartevents,Centrimag,,Text
+,229819,Backup Controller (VAD),Backup Controller (VAD),chartevents,Durable VAD,,Text
+,229821,Device (VAD),Device (VAD),chartevents,Durable VAD,,Text
+,229822,Driveline Lock Engaged (VAD),Driveline Lock Engaged (VAD),chartevents,Durable VAD,,Text
+flow,229823,Flow (VAD),Flow (VAD),chartevents,Durable VAD,L/min,Numeric
+,229824,HCT (VAD),HCT (VAD),chartevents,Durable VAD,,Numeric
+,229825,High Watts Alarm (VAD),High Watts Alarm (VAD),chartevents,Durable VAD,,Numeric
+,229826,Low Flow Alarm (VAD),Low Flow Alarm (VAD),chartevents,Durable VAD,,Numeric
+,229836,Low Speed Limit (VAD),Low Speed Limit (VAD),chartevents,Durable VAD,,Text
+,229895,Low Speed Limit (VAD),Low Speed Limit (VAD),chartevents,Durable VAD,RPM,Numeric
+,229827,Mean BP (VAD),Mean BP (VAD),chartevents,Durable VAD,mmHg,Numeric
+,229859,Power (Watts) (VAD),Power (Watts) (VAD),chartevents,Durable VAD,,Numeric
+,229828,Pulsatility Index (VAD),Pulsatility Index (VAD),chartevents,Durable VAD,,Numeric
+device_rate,229829,Speed (VAD),Speed (VAD),chartevents,Durable VAD,RPM,Numeric
+,229830,System controller in primary mode (VAD),System controller in primary mode (VAD),chartevents,Durable VAD,,Text
+,229831,System power module and self test (VAD),System power module and self test (VAD),chartevents,Durable VAD,,Text
+,229834,Waveform Peak (VAD),Waveform Peak (VAD),chartevents,Durable VAD,,Numeric
+,229835,Waveform Trough (VAD),Waveform Trough (VAD),chartevents,Durable VAD,,Numeric
+,229833,ZzWaveform Variability (VAD),ZzWaveform Variability (VAD),chartevents,Durable VAD,,Text
+,229832,ZzWaveform Variability (VAD)old,ZzWaveform Variability (VAD)old,chartevents,Durable VAD,,Numeric
+,229853,Art Bubble (CH),Art Bubble (CH),chartevents,ECMO,,Checkbox
+,229879,Cannula sites visually inspected (CH),Cannula sites visually inspected (CH),chartevents,ECMO,,Text
+,229266,Cannula sites visually inspected (ECMO),Cannula sites visually inspected (ECMO),chartevents,ECMO,,Text
+,229840,Circuit Configuration (CH),Circuit Configuration (CH),chartevents,ECMO,,Text
+device_name,229268,Circuit Configuration (ECMO),Circuit Configuration (ECMO),chartevents,ECMO,,Text
+,229878,Circuit inspected for clot (CH),Circuit inspected for clot (CH),chartevents,ECMO,,Text
+,229269,Circuit inspected for clot (ECMO),Circuit inspected for clot (ECMO),chartevents,ECMO,,Text
+,229852,Delta P (CH),Delta P (CH),chartevents,ECMO,,Numeric
+,230168,Delta P (ECMO),Delta P (ECMO),chartevents,ECMO,,Numeric
+,229855,Delta P Alarm (CH),Delta P Alarm (CH),chartevents,ECMO,,Numeric
+,230169,Delta P Alarm (ECMO),Delta P Alarm (ECMO),chartevents,ECMO,,Numeric
+,229873,Emergency Equipment at bedside (CH),Emergency Equipment at bedside (CH),chartevents,ECMO,,Text
+,229267,Emergency Equipment at bedside (ECMO),Emergency Equipment at bedside (ECMO),chartevents,ECMO,,Text
+fdo2,229841,FiO2 (CH),FiO2 (CH),chartevents,ECMO,%,Numeric
+fdo2,229280,FiO2 (ECMO),FiO2 (ECMO),chartevents,ECMO,%,Numeric
+flow,229842,Flow (CH),Flow (CH),chartevents,ECMO,L/min,Numeric
+flow,229270,Flow (ECMO),Flow (ECMO),chartevents,ECMO,L/min,Numeric
+,229843,Flow Alarm (Hi) (CH),Flow Alarm (Hi) (CH),chartevents,ECMO,,Numeric
+,229271,Flow Alarm (Hi) (ECMO),Flow Alarm (Hi) (ECMO),chartevents,ECMO,,Numeric
+,229844,Flow Alarm (Lo) (CH),Flow Alarm (Lo) (CH),chartevents,ECMO,,Numeric
+,229272,Flow Alarm (Lo) (ECMO),Flow Alarm (Lo) (ECMO),chartevents,ECMO,,Numeric
+,229874,Flow Sensor repositioned (CH),Flow Sensor repositioned (CH),chartevents,ECMO,,Text
+,229273,Flow Sensor repositioned (ECMO),Flow Sensor repositioned (ECMO),chartevents,ECMO,,Text
+,229875,Oxygenator visible (CH),Oxygenator visible (CH),chartevents,ECMO,,Text
+,229274,Oxygenator visible (ECMO),Oxygenator visible (ECMO),chartevents,ECMO,,Text
+,230160,Oxymetry location (CH),Oxymetry location (CH),chartevents,ECMO,,Text
+,230159,Oxymetry location (ECMO),Oxymetry location (ECMO),chartevents,ECMO,,Text
+,229365,P1 - P2 (ECMO),P1 - P2 (ECMO),chartevents,ECMO,mmHg,Numeric
+,229363,P1 (ECMO),P1 (ECMO),chartevents,ECMO,mmHg,Numeric
+,229364,P2 (ECMO),P2 (ECMO),chartevents,ECMO,mmHg,Numeric
+,229851,Part (CH),Part (CH),chartevents,ECMO,,Numeric
+,229849,Part Alarm (Hi) (CH),Part Alarm (Hi) (CH),chartevents,ECMO,,Numeric
+,230170,Part Alarm (Hi) (ECMO),Part Alarm (Hi) (ECMO),chartevents,ECMO,,Numeric
+,230165,Pint (CH),Pint (CH),chartevents,ECMO,,Numeric
+,230167,Pint Alarm (Hi) (CH),Pint Alarm (Hi) (CH),chartevents,ECMO,,Numeric
+,230171,Pint Alarm (Hi) (ECMO),Pint Alarm (Hi) (ECMO),chartevents,ECMO,,Numeric
+,229854,Pressures Off (CH),Pressures Off (CH),chartevents,ECMO,,Checkbox
+,229876,Pump plugged into RED outlet (CH),Pump plugged into RED outlet (CH),chartevents,ECMO,,Text
+,229275,Pump plugged into RED outlet (ECMO),Pump plugged into RED outlet (ECMO),chartevents,ECMO,,Text
+,229850,Pven (CH),Pven (CH),chartevents,ECMO,,Numeric
+,230166,Pven Alarm (High) (CH),Pven Alarm (High) (CH),chartevents,ECMO,,Numeric
+,229848,Pven Alarm (Low) (CH),Pven Alarm (Low) (CH),chartevents,ECMO,,Numeric
+device_rate,229845,Speed (CH),Speed (CH),chartevents,ECMO,RPM,Numeric
+device_rate,229277,Speed (ECMO),Speed (ECMO),chartevents,ECMO,RPM,Numeric
+,230163,StO2 L (CH),StO2 L (CH),chartevents,ECMO,%,Numeric
+,230164,StO2 L (ECMO),StO2 L (ECMO),chartevents,ECMO,%,Numeric
+,230162,StO2 R (CH),StO2 R (CH),chartevents,ECMO,%,Numeric
+,230161,StO2 R (ECMO),StO2 R (ECMO),chartevents,ECMO,%,Numeric
+,229877,Suction events (CH),Suction events (CH),chartevents,ECMO,,Text
+,229276,Suction events (ECMO),Suction events (ECMO),chartevents,ECMO,,Text
+,229847,SvO2 Alarm (Lo) (CH),SvO2 Alarm (Lo) (CH),chartevents,ECMO,,Numeric
+sweep,229846,Sweep (CH),Sweep (CH),chartevents,ECMO,,Text
+sweep,229278,Sweep (ECMO),Sweep (ECMO),chartevents,ECMO,,Text
+,229309,Backup Controller (HeartWare),Backup Controller (HeartWare),chartevents,Heartware,,Text
+flow,229304,Flow (L/min) (HeartWare),Flow (L/min) (HeartWare),chartevents,Heartware,,Numeric
+,229306,HCT (HeartWare),HCT (HeartWare),chartevents,Heartware,,Numeric
+,229308,High Power Alarm (HeartWare),High Power Alarm (HeartWare),chartevents,Heartware,,Numeric
+,229307,Low Flow Alarm (HeartWare),Low Flow Alarm (HeartWare),chartevents,Heartware,,Numeric
+,229305,Power (Watts) (HeartWare),Power (Watts) (HeartWare),chartevents,Heartware,,Numeric
+device_rate,229303,Speed (RPM) (HeartWare),Speed (RPM) (HeartWare),chartevents,Heartware,,Numeric
+,224660,ECMO,ECMO,chartevents,Hemodynamics,L/min,Numeric
+,228871,HM II- Backup Cont in room with pt settings,HM II- Backup Cont in room with pt settings_201904,chartevents,Hemodynamics,,Checkbox
+flow,228873,HM II- Flow,HM II- Flow,chartevents,Hemodynamics,L/min,Numeric
+,228872,HM II- Mean BP,HM II- Mean BP,chartevents,Hemodynamics,mmHg,Numeric
+,228869,HM II- Perc Lock fully engaged,HM II- Perc Lock fully engaged,chartevents,Hemodynamics,,Checkbox
+,228875,HM II- PI,HM II- PI,chartevents,Hemodynamics,,Numeric
+,228876,HM II- Power,HM II- Power,chartevents,Hemodynamics,,Numeric
+device_rate,228874,HM II- Speed (RPM),HM II- Speed (RPM),chartevents,Hemodynamics,,Numeric
+,228870,HM II- Sys Cont in Prim Mode,HM II- Sys Cont in Prim Mode,chartevents,Hemodynamics,,Checkbox
+flow,220125,Left Ventricular Assit Device Flow,LVAD,chartevents,Hemodynamics,L/min,Numeric
+flow,220128,Right Ventricular Assist Device Flow,RVAD,chartevents,Hemodynamics,L/min,Numeric
+,224363,VAD Beat Rate L,VAD Beat Rate L,chartevents,Hemodynamics,bpm,Numeric
+,223775,VAD Beat Rate R,VAD Beat Rate R,chartevents,Hemodynamics,bpm,Numeric
+,220120,Intra Aortic Ballon Pump Setting,Intra Aortic Ballon Pump Setting,chartevents,IABP,,Text
+,224318,ABI Ankle BP L (Impella),ABI Ankle BP L (Impella),chartevents,Impella,mmHg,Numeric
+,228148,ABI Ankle BP R (Impella),ABI Ankle BP R (Impella),chartevents,Impella,mmHg,Numeric
+,228149,ABI Brachial BP L (Impella),ABI Brachial BP L (Impella),chartevents,Impella,mmHg,Numeric
+,224314,ABI Brachial BP R (Impella),ABI Brachial BP R (Impella),chartevents,Impella,mmHg,Numeric
+,228151,Aortic Pressure Signal - Diastolic,Aortic Pressure Signal - Diastolic,chartevents,Impella,mmHg.,Numeric
+,228152,Aortic Pressure Signal - Systolic,Aortic Pressure Signal - Systolic,chartevents,Impella,mmHg.,Numeric
+,229897,Cardiac Output (CO) (Impella),CO (Impella),chartevents,Impella,L/min,Numeric
+,229896,Cardiac Power Output (CPO),CPO,chartevents,Impella,Watts,Numeric
+,228153,Dual Signal Screen,Dual Signal Screen,chartevents,Impella,,Text
+,229670,Dual Signal Screen (R),Dual Signal Screen (R),chartevents,Impella,,Text
+flow,228154,Flow Rate (Impella),Flow Rate (Impella),chartevents,Impella,L/min,Numeric
+flow,228154,Flow Rate (Impella) (R),Flow Rate (Impella) (R),chartevents,Impella,L/min,Numeric
+,229900,Left Ventricular Pressure Signal - Diastolic,Left Ventricular Pressure Signal - Diastolic,chartevents,Impella,mmHg,Numeric
+,229899,Left Ventricular Pressure Signal - Systolic,Left Ventricular Pressure Signal - Systolic,chartevents,Impella,mmHg,Numeric
+,229898,LVEDP (Impella),LVEDP (Impella),chartevents,Impella,mmHg,Numeric
+,229311,Motor Current (mA) High,Motor Current (mA) High,chartevents,Impella,,Numeric
+,229673,Motor Current (mA) High (R),Motor Current (mA) High (R),chartevents,Impella,,Numeric
+,229312,Motor Current (mA) Low,Motor Current (mA) Low,chartevents,Impella,,Numeric
+,229674,Motor Current (mA) Low (R),Motor Current (mA) Low (R),chartevents,Impella,,Numeric
+device_rate,228156,Performance Level,Performance Level,chartevents,Impella,,Text
+device_rate,229675,Performance Level (R),Performance Level (R),chartevents,Impella,,Text
+,228157,Placement Monitoring Screen,Placement Monitoring Screen,chartevents,Impella,,Text
+,229676,Placement Monitoring Screen (R),Placement Monitoring Screen (R),chartevents,Impella,,Text
+,229668,Pulmonary Artery Pressure Signal - Diastolic,Pulmonary Artery Pressure Signal - Diastolic,chartevents,Impella,mmHg.,Numeric
+,229669,Pulmonary Atrtery Pressure Signal - Systolic,Pulmonary Artery Pressure Signal - Systolic,chartevents,Impella,mmHg.,Numeric
+,228158,Purge Pressure,Purge Pressure,chartevents,Impella,mmHg,Numeric
+,229677,Purge Pressure (R),Purge Pressure (R),chartevents,Impella,mmHg,Numeric
+,228159,Purge Solution Flow Rate,Purge Solution Flow Rate,chartevents,Impella,ml/hr,Numeric
+,229678,Purge Solution Flow Rate (R),Purge Solution Flow Rate (R),chartevents,Impella,ml/hr,Numeric
+,230131,Suction events (L),Suction events (L),chartevents,Impella,,Text
+,230132,Suction events (R),Suction events (R),chartevents,Impella,,Text
+device_name,229679,Type of Catheter (Impella),Type of Catheter (Impella),chartevents,Impella,,Text
+,228186,Access Site Observed (Tandem Heart),Insertion Site Observed (LifeSPARC),chartevents,Tandem Heart,,Checkbox
+,228187,Cannulas Visible,Cannulas Visible,chartevents,Tandem Heart,,Checkbox
+,228188,Change in Blood Color,Change in Blood Color,chartevents,Tandem Heart,,Checkbox
+,228189,CO-Tandem Heart Flow,CO-Flow (LifeSPARC),chartevents,Tandem Heart,L/min,Numeric
+fdo2,230086,FdO2,FdO2,chartevents,Tandem Heart,%,Numeric
+,230032,Flow Sensor repositioned (Tandem),Flow Sensor repositioned (LifeSPARC),chartevents,Tandem Heart,,Text
+,228190,Infusate Drops/Minute,Infusate Drops/Minute,chartevents,Tandem Heart,,Numeric
+,228191,Infusion Pressure of Line,Infusion Pressure of Line,chartevents,Tandem Heart,,Numeric
+sweep,228192,Oxygenator Sweep Rate,Oxygenator Sweep Rate,chartevents,Tandem Heart,L/min,Numeric
+,228193,Oxygenator/ECMO,Oxygenator/ECMO,chartevents,Tandem Heart,,Checkbox
+,228193,Oxygenator/ECMO,Oxygenator/ECMO,chartevents,Tandem Heart,,Checkbox
+,228194,Peripheral Pulses (Tandem Heart),Peripheral Pulses (LifeSPARC),chartevents,Tandem Heart,,Text
+device_rate,228195,Pump Speed,Pump Speed,chartevents,Tandem Heart,,Numeric
+,228196,Return Site Observed (Tandem Heart),Return Site Observed (Tandem Heart),chartevents,Tandem Heart,,Checkbox
+flow,228198,Tandem Heart Flow,Flow (LifeSPARC),chartevents,Tandem Heart,L/min,Numeric
+,228199,Type (Tandem Heart),Type (LifeSPARC),chartevents,Tandem Heart,,Text
+,228200,Vibration in Line,Vibration in Line,chartevents,Tandem Heart,,Checkbox

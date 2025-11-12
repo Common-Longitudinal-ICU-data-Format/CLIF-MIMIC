@@ -8,16 +8,18 @@ CLIF_*/
 data/mimic-data
 data/rclif-*
 data/mappings/.*
-data/test-data
+# data/test-data  # removed - test data now in tests/fixtures/
 start_jupyter.sh
 output/*
 *.parquet
 logs/*
-tests/
+# tests/  # removed - tests should be version controlled
 config/config.json
+__marimo__/
 
 .hamilton_cache/
 ._*
+.dev/
 
 # data
 mimic-data/
@@ -27,6 +29,9 @@ clif-tables/
 rclif-1.0/
 # wget logging
 wget-log
+
+# duckdb
+.tmp/
 
 # vscode setting
 .vscode

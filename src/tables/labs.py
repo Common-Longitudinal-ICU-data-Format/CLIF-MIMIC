@@ -6,7 +6,10 @@ import re
 import importlib 
 import duckdb
 from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
-import pandera as pa
+from src.logging_config import setup_logging, get_logger
+
+logger = get_logger('tables.labs')
+import pandera.pandas as pa
 from typing import Dict, List
 import json
 
@@ -19,32 +22,24 @@ from src.utils import (
     rename_and_reorder_cols,
     save_to_rclif,
     convert_and_sort_datetime,
-    setup_logging,
     convert_tz_to_utc,
     CLIF_DTTM_FORMAT,
 )
 
-def _permitted_lab_categories() -> List[str]:
-    clif_labs_mcide = pd.read_csv("https://raw.githubusercontent.com/Common-Longitudinal-ICU-data-Format/CLIF/refs/heads/main/mCIDE/clif_lab_categories.csv")
-    return clif_labs_mcide["lab_category"].unique()
+from src.utils_qa import all_null_check
 
-all_null_check = pa.Check(
-    lambda s: s.isna().all(), 
-    element_wise=False, 
-    error="Column must contain only null values"
-    )
+def _permitted_lab_categories() -> List[str]:
+    clif_labs_mcide = pd.read_csv("data/mcide/clif_lab_categories.csv")
+    return clif_labs_mcide["lab_category"].unique()
 
 CLIF_LABS_SCHEMA = pa.DataFrameSchema(
     {
         "hospitalization_id": pa.Column(str, nullable=False),
-        "lab_order_dttm": pa.Column(
-            pd.DatetimeTZDtype(unit="ns", tz="UTC"), 
-            checks=[all_null_check],
-            nullable=True),
+        "lab_order_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False),
         "lab_collect_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False),
         "lab_result_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False), 
         "lab_order_name": pa.Column(str, checks=[all_null_check], nullable=True),
-        "lab_order_category": pa.Column(str, checks=[all_null_check], nullable=True),
+        "lab_order_category": pa.Column(str, nullable=False),
         "lab_name": pa.Column(str, nullable=False),
         "lab_category": pa.Column(str, checks=[pa.Check.isin(_permitted_lab_categories())], nullable=False),
         "lab_value": pa.Column(str, nullable=True),
@@ -69,8 +64,8 @@ COL_RENAME_MAPPER: Dict[str, str] = {
 
 
 def labs_mapping() -> pd.DataFrame:
-    logging.info("starting data extraction")
-    logging.info("loading mapping...")
+    logger.info("starting data extraction")
+    logger.info("loading mapping...")
     # Load and prepare mapping
     labs_mapping = load_mapping_csv("labs")
     # drop the row corresponding to procalcitonin which is not available in MIMIC
@@ -79,21 +74,21 @@ def labs_mapping() -> pd.DataFrame:
     return labs_mapping
 
 def id_to_name_mapper(labs_mapping: pd.DataFrame) -> dict:
-    logging.info("constructing item id to name mapper...")
+    logger.info("constructing item id to name mapper...")
     return construct_mapper_dict(
         labs_mapping, "itemid", "label", 
         excluded_labels=["NO MAPPING", "MAPPED ELSEWHERE", "ALREADY MAPPED", "NOT AVAILABLE"]
     )
 
 def id_to_category_mapper(labs_mapping: pd.DataFrame) -> dict:
-    logging.info("constructing item id to category mapper...")
+    logger.info("constructing item id to category mapper...")
     return construct_mapper_dict(
         labs_mapping, "itemid", "lab_category", 
         excluded_labels=["NO MAPPING", "MAPPED ELSEWHERE", "ALREADY MAPPED", "NOT AVAILABLE"]
     )
 
 def labs_items(labs_mapping: pd.DataFrame) -> pd.DataFrame:
-    logging.info("filtering labs items...")
+    logger.info("filtering labs items...")
     return labs_mapping.loc[
         labs_mapping["decision"].isin(["TO MAP, CONVERT UOM", "TO MAP, AS IS", "UNSURE"]),
         ["lab_category", "itemid", "label", "count"]
@@ -101,26 +96,26 @@ def labs_items(labs_mapping: pd.DataFrame) -> pd.DataFrame:
 
 @cache(behavior="default", format="parquet")
 def extracted_le_labs(labs_items: pd.DataFrame) -> pd.DataFrame:
-    logging.info("identifying lab items to be extracted from labevents table...")
+    logger.info("identifying lab items to be extracted from labevents table...")
     # labevents table has itemids with 5 digits
     labs_items_le = labs_items[labs_items['itemid'].astype("string").str.len() == 5]
-    logging.info("extracting from labevents table...")
+    logger.info("extracting from labevents table...")
     df_le = fetch_mimic_events(labs_items_le['itemid'], original=True, for_labs=True)
     return df_le
 
 @cache(behavior="default", format="parquet")
 def extracted_ce_labs(labs_items: pd.DataFrame) -> pd.DataFrame:
-    logging.info("identifying lab items to be extracted from chartevents table...")    
+    logger.info("identifying lab items to be extracted from chartevents table...")    
     # chartevents table has itemids with 6 digits
     labs_items_ce = labs_items[labs_items['itemid'].astype("string").str.len() == 6]
-    logging.info("extracting from chartevents table...")
+    logger.info("extracting from chartevents table...")
     df_ce = fetch_mimic_events(labs_items_ce['itemid'], original=True, for_labs=False)
     return df_ce
 
 @cache(format="parquet")
 def le_labs_translated(extracted_le_labs: pd.DataFrame, id_to_name_mapper: dict, id_to_category_mapper: dict) -> pd.DataFrame:
     df = extracted_le_labs
-    logging.info("translating labevents item ids to lab names and categories...")
+    logger.info("translating labevents item ids to lab names and categories...")
     df["lab_name"] = df["itemid"].map(id_to_name_mapper)
     df["lab_category"] = df["itemid"].map(id_to_category_mapper)
     return df
@@ -140,7 +135,7 @@ def _parse_labs_comment(comment: str) -> float:
     return parsed_number
 
 def le_labs_comments_parsed(le_labs_translated: pd.DataFrame) -> pd.DataFrame:
-    logging.info("parsing lab comments to recover otherwise missing lab values...")
+    logger.info("parsing lab comments to recover otherwise missing lab values...")
     df = le_labs_translated
     mask = df["valuenum"].isna()
     df.loc[mask, ["valuenum"]] = df.loc[mask, "comments"].map(
@@ -150,7 +145,7 @@ def le_labs_comments_parsed(le_labs_translated: pd.DataFrame) -> pd.DataFrame:
 
 @cache(format="parquet")
 def le_labs_renamed_reordered(le_labs_comments_parsed: pd.DataFrame) -> pd.DataFrame:
-    logging.info("renaming and reordering labevents columns...")
+    logger.info("renaming and reordering labevents columns...")
     df = le_labs_comments_parsed
     return rename_and_reorder_cols(df, COL_RENAME_MAPPER, LABS_COLUMNS + ["itemid"])
 
@@ -158,7 +153,7 @@ def le_labs_renamed_reordered(le_labs_comments_parsed: pd.DataFrame) -> pd.DataF
 def le_labs_units_converted(le_labs_renamed_reordered: pd.DataFrame) -> pd.DataFrame:
     """Convert units of measurement for specific lab items."""
     df = le_labs_renamed_reordered
-    logging.info("converting units of measurement...")
+    logger.info("converting units of measurement...")
     # for ionized (free) calcium, to convert a result from mmol/L to mg/dL, multiply the mmol/L value by 4.  
     # https://www.abaxis.com/sites/default/files/resource-packages/Ionized%20Calcium%20CTI%20Sheete%20714179-00P.pdf
     mask_ca = df["itemid"].isin([50808, 51624])
@@ -176,7 +171,7 @@ def le_labs_units_converted(le_labs_renamed_reordered: pd.DataFrame) -> pd.DataF
 
 @cache(format="parquet")
 def ce_labs_translated(extracted_ce_labs: pd.DataFrame, id_to_name_mapper: dict, id_to_category_mapper: dict) -> pd.DataFrame:
-    logging.info("translating chartevents item ids to lab names and categories...")
+    logger.info("translating chartevents item ids to lab names and categories...")
     df = extracted_ce_labs
     df["lab_name"] = df["itemid"].map(id_to_name_mapper)
     df["lab_category"] = df["itemid"].map(id_to_category_mapper)
@@ -184,21 +179,23 @@ def ce_labs_translated(extracted_ce_labs: pd.DataFrame, id_to_name_mapper: dict,
 
 @cache(format="parquet")
 def ce_labs_renamed_reordered(ce_labs_translated: pd.DataFrame) -> pd.DataFrame:
-    logging.info("renaming and reordering chartevents columns...")
+    logger.info("renaming and reordering chartevents columns...")
     df = ce_labs_translated
     return rename_and_reorder_cols(df, COL_RENAME_MAPPER, LABS_COLUMNS + ["itemid"])
 
 @cache(format="parquet")
 def merged(le_labs_units_converted: pd.DataFrame, ce_labs_renamed_reordered: pd.DataFrame) -> pd.DataFrame:
-    logging.info("merging lab events...")
+    logger.info("merging lab events...")
     merged = pd.concat([le_labs_units_converted, ce_labs_renamed_reordered])
     merged.drop(columns = "itemid", inplace = True)
+    # use the same timestamp for lab_order_dttm as lab_collect_dttm
+    merged['lab_order_dttm'] = merged['lab_collect_dttm']
     return merged
 
 @cache(format="parquet")
 def columns_recast(merged: pd.DataFrame) -> pd.DataFrame:
     """Clean and recast columns to appropriate data types."""
-    logging.info("cleaning and recasting columns...")
+    logger.info("cleaning and recasting columns...")
     for col in merged.columns:
         if "dttm" in col:
             merged[col] = pd.to_datetime(merged[col], format=CLIF_DTTM_FORMAT)
@@ -217,33 +214,45 @@ def null_result_dttm_removed(columns_recast: pd.DataFrame) -> pd.DataFrame:
 def duplicates_removed(null_result_dttm_removed: pd.DataFrame) -> pd.DataFrame:
     """Remove duplicate lab results."""
     df = null_result_dttm_removed
-    logging.info("starting duplicates removal...")
+    logger.info("starting duplicates removal...")
     df.drop_duplicates(
-        subset=["hospitalization_id", "lab_collect_dttm", "lab_result_dttm", 
+        subset=["hospitalization_id", "lab_order_dttm", "lab_collect_dttm", "lab_result_dttm", 
                 "lab_category", "lab_value_numeric"],
         inplace=True
     )
     return df
 
-@tag(property="test")
-def schema_tested(duplicates_removed: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
-    logging.info("testing schema...")
+def lab_order_category_mapper() -> dict:
+    labs_order_category_mapping = pd.read_csv("data/mcide/clif_labs_order_categories.csv")
+    return construct_mapper_dict(
+        labs_order_category_mapping, "lab_category", "lab_order_category", 
+    )
+
+def lab_order_category_mapped(duplicates_removed: pd.DataFrame, lab_order_category_mapper: dict) -> pd.DataFrame:
+    logger.info("mapping lab order category...")
     df = duplicates_removed
+    df["lab_order_category"] = df["lab_category"].map(lab_order_category_mapper)
+    return df
+    
+@tag(property="test")
+def schema_tested(lab_order_category_mapped: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
+    logger.info("testing schema...")
+    df = lab_order_category_mapped
     try:
         CLIF_LABS_SCHEMA.validate(df, lazy=True)
         return True
     except pa.errors.SchemaErrors as exc:
-        logging.error(json.dumps(exc.message, indent=2))
-        logging.error("Schema errors and failure cases:")
-        logging.error(exc.failure_cases)
-        logging.error("\nDataFrame object that failed validation:")
-        logging.error(exc.data)
+        logger.error(json.dumps(exc.message, indent=2))
+        logger.error("Schema errors and failure cases:")
+        logger.error(exc.failure_cases)
+        logger.error("\nDataFrame object that failed validation:")
+        logger.error(exc.data)
         return exc
 
 @datasaver()
-def save(duplicates_removed: pd.DataFrame) -> dict:
-    logging.info("saving to rclif...")
-    save_to_rclif(duplicates_removed, "labs")
+def save(lab_order_category_mapped: pd.DataFrame) -> dict:
+    logger.info("saving to rclif...")
+    save_to_rclif(lab_order_category_mapped, "labs")
     
     metadata = {
         "table_name": "labs"
@@ -254,7 +263,6 @@ def save(duplicates_removed: pd.DataFrame) -> dict:
 def _main():
     from hamilton import driver
     import src.tables.labs as labs
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(labs)
@@ -264,10 +272,9 @@ def _main():
     dr.execute(["save"])
 
 def _test():
-    logging.info("testing all...")
+    logger.info("testing all...")
     from hamilton import driver
     import src.tables.labs as labs
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(labs)
@@ -279,4 +286,5 @@ def _test():
     return output
 
 if __name__ == "__main__":
+    setup_logging()
     _main()

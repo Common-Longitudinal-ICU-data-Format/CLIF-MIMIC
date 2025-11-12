@@ -5,7 +5,10 @@ import logging
 import importlib 
 import duckdb
 from hamilton.function_modifiers import tag, datasaver, config, check_output
-import pandera as pa
+from src.logging_config import setup_logging, get_logger
+
+logger = get_logger('tables.respiratory_support')
+import pandera.pandas as pa
 import json
 
 from src.utils import (
@@ -17,7 +20,6 @@ from src.utils import (
     rename_and_reorder_cols,
     save_to_rclif,
     convert_and_sort_datetime,
-    setup_logging,
     convert_tz_to_utc,
 )
 
@@ -128,7 +130,7 @@ def mimic_item_ids(resp_mapping: pd.DataFrame) -> pd.Series:
     )
 
 def extracted_mimic_events(mimic_item_ids: pd.Series) -> pd.DataFrame:
-    logging.info(
+    logger.info(
         "parsing the mapping files to identify relevant items and fetch corresponding events..."
     )
     return fetch_mimic_events(mimic_item_ids)
@@ -139,7 +141,7 @@ def extracted_mimic_events_translated(extracted_mimic_events: pd.DataFrame, resp
 
 def none_value_rows_removed(extracted_mimic_events_translated: pd.DataFrame = None) -> pd.DataFrame:
     """Remove rows where value is the string 'None'."""
-    logging.info("removing rows where O2 Delivery Device(s) is the string 'None'...")
+    logger.info("removing rows where O2 Delivery Device(s) is the string 'None'...")
     mask = extracted_mimic_events_translated["value"] == "None"
     none_value_rows = extracted_mimic_events_translated[mask] # df to drop
     # TODO: turn this into a validation check
@@ -172,7 +174,7 @@ def fio2_set_cleaned(none_value_rows_removed: pd.DataFrame) -> pd.DataFrame:
     '''
     Apply outlier handling and drop the nulls thus generated.
     '''     
-    logging.info("cleaning fio2_set...")
+    logger.info("cleaning fio2_set...")
     mask = none_value_rows_removed['variable'] == 'fio2_set'
     none_value_rows_removed.loc[mask, 'value'] = none_value_rows_removed.loc[mask, 'value'].apply(_clean_fio2_set_helper)        
     return none_value_rows_removed.dropna(subset=['value'])
@@ -187,10 +189,10 @@ def duplicates_removed(
     """
     resp_duplicates: pd.DataFrame = find_duplicates(fio2_set_cleaned)
 
-    logging.info(
+    logger.info(
         f"identified {len(resp_duplicates)} 'duplicated' events to be cleaned."
     )
-    logging.info(
+    logger.info(
         "removing the first type of duplicates: lower-ranked 'duplicated' devices..."
     )
     # 1/ deal with dups over devices
@@ -218,7 +220,7 @@ def duplicates_removed(
     # drop None
     resp_events_clean.dropna(subset="value", inplace=True)
 
-    logging.info(
+    logger.info(
         "removing the second type of duplicates: duplicated device reads..."
     )
     # 2/ deal with duplicate vent reads:
@@ -243,7 +245,7 @@ def pivoted_wider_and_coalesced(
     resp_mode_mapper: dict,
 ) -> pd.DataFrame:
     
-    logging.info("pivoting to a wide format and coalescing duplicate columns...")
+    logger.info("pivoting to a wide format and coalescing duplicate columns...")
     # this is for EDA
     # resp_wider_in_lables = resp_events_clean.pivot(
     #     index = ["hadm_id", "time"],
@@ -312,7 +314,7 @@ def pivoted_wider_and_coalesced(
     )
     resp_wider_cleaned.rename(columns=resp_mapper, inplace=True)
 
-    logging.info("mapping device and mode names to categories...")
+    logger.info("mapping device and mode names to categories...")
     # map _name to _category
     resp_wider_cleaned["device_category"] = resp_wider_cleaned["device_name"].map(
         lambda x: resp_device_mapper[x.strip()] if pd.notna(x) else None
@@ -325,7 +327,7 @@ def pivoted_wider_and_coalesced(
 def renamed_reordered_recasted(
     pivoted_wider_and_coalesced: pd.DataFrame,
 ) -> pd.DataFrame:
-    logging.info("renaming, reordering, and re-casting columns...")
+    logger.info("renaming, reordering, and re-casting columns...")
     resp_final = rename_and_reorder_cols(
         pivoted_wider_and_coalesced,
         rename_mapper_dict={
@@ -348,12 +350,12 @@ def renamed_reordered_recasted(
 
 @tag(property="final")
 def tracheostomy_imputed(renamed_reordered_recasted: pd.DataFrame) -> pd.DataFrame:
-    logging.info(
+    logger.info(
         "imputing whether tracheostomy had been performed at the time of observation..."
     )
     renamed_reordered_recasted.rename(columns={"tracheostomy": "trach_performed"}, inplace=True)
     renamed_reordered_recasted["trach_implied"] = (
-        renamed_reordered_recasted["device_name"].isin(["Tracheostomy tube", "Trach mask"])
+        renamed_reordered_recasted["device_name"].str.strip().isin(["Tracheostomy tube", "Trach mask"])
     ) | (renamed_reordered_recasted["trach_performed"] == 1)
     renamed_reordered_recasted["trach_bool"] = renamed_reordered_recasted.groupby("hospitalization_id")[
         "trach_implied"
@@ -371,22 +373,22 @@ def _find_and_report_all_null_rows(df: pd.DataFrame):
         & (df["vent_brand_name"].isna())
         & (df["all_value_na"] == True)
     )
-    logging.info(f"{mask.sum()} ({mask.mean()*100:.2f}%) rows have null in device_name, vent_brand_name, mode_name, and all value fields.")
+    logger.info(f"{mask.sum()} ({mask.mean()*100:.2f}%) rows have null in device_name, vent_brand_name, mode_name, and all value fields.")
     return df[mask]
 
 @tag(property="test")
 def schema_tested(tracheostomy_imputed: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
-    logging.info("testing schema...")
+    logger.info("testing schema...")
     df = tracheostomy_imputed
     try:
         CLIF_RESP_SCHEMA.validate(df, lazy=True)
         return True
     except pa.errors.SchemaErrors as exc:
-        logging.error(json.dumps(exc.message, indent=2))
-        logging.error("Schema errors and failure cases:")
-        logging.error(exc.failure_cases)
-        logging.error("\nDataFrame object that failed validation:")
-        logging.error(exc.data)
+        logger.error(json.dumps(exc.message, indent=2))
+        logger.error("Schema errors and failure cases:")
+        logger.error(exc.failure_cases)
+        logger.error("\nDataFrame object that failed validation:")
+        logger.error(exc.data)
         return exc
 
 @tag(property="test")
@@ -406,10 +408,9 @@ def save(tracheostomy_imputed: pd.DataFrame) -> dict:
     return metadata
 
 def _test():
-    logging.info("testing all...")
+    logger.info("testing all...")
     from hamilton import driver
     import src.tables.respiratory_support as respiratory_support
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(respiratory_support)
@@ -418,13 +419,12 @@ def _test():
     all_nodes = dr.list_available_variables()
     test_nodes = [node.name for node in all_nodes if 'test' == node.tags.get('property')]
     output = dr.execute(test_nodes)
-    print(output)
+    logger.debug(f"Test output: {output}")
     return output
 
 def _main():
     from hamilton import driver
     import src.tables.respiratory_support as respiratory_support
-    setup_logging()
     dr = (
         driver.Builder()
         .with_modules(respiratory_support)
@@ -434,4 +434,5 @@ def _main():
     dr.execute(["save"])
 
 if __name__ == "__main__":
+    setup_logging()
     _main()

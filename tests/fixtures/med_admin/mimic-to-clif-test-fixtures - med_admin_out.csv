@@ -1,0 +1,43 @@
+hospitalization_id,med_order_id,admin_dttm,med_category,mar_action_name,mar_action_category,med_dose,med_dose_unit,med_route_category
+20214994,6719427,2137-02-27 3:02:00,norepinephrine,[Started],start,0.1000881603,mcg/kg/min,iv
+20214994,6719427,2137-02-27 3:34:00,norepinephrine,ChangeDose/Rate,dose_change,0.05004408013,mcg/kg/min,iv
+20214994,6719427,2137-02-27 5:32:00,norepinephrine,Paused,stop,0,mcg/kg/min,iv
+20214994,6719427,2137-02-27 6:01:00,norepinephrine,[Restarted],start,0.05004408013,mcg/kg/min,iv
+20214994,6719427,2137-02-27 6:19:00,norepinephrine,Paused,stop,0,mcg/kg/min,iv
+20214994,6719427,2137-02-27 6:39:00,norepinephrine,[Restarted],start,0.05004408013,mcg/kg/min,iv
+20214994,6719427,2137-02-27 9:27:00,norepinephrine,ChangeDose/Rate,dose_change,0.04024374357,mcg/kg/min,iv
+20214994,6719427,2137-02-27 11:59:00,norepinephrine,Paused,stop,0,mcg/kg/min,iv
+20214994,6719427,2137-02-27 12:15:00,norepinephrine,[Restarted],start,0.04024374357,mcg/kg/min,iv
+20214994,6719427,2137-02-27 12:49:00,norepinephrine,ChangeDose/Rate,dose_change,0.02293606485,mcg/kg/min,iv
+20214994,6719427,2137-02-27 12:58:00,norepinephrine,Stopped,stop,0,mcg/kg/min,iv
+20214994,3080173,2137-02-27 10:35:00,esmolol,[Started],start,50.01250282,mcg/kg/min,iv
+20214994,3080173,2137-02-27 11:02:00,esmolol,Paused,stop,0,mcg/kg/min,iv
+20214994,3080173,2137-02-27 12:01:00,esmolol,[Restarted],start,50.01250282,mcg/kg/min,iv
+20214994,3080173,2137-02-27 12:59:00,esmolol,ChangeDose/Rate,dose_change,100.3174558,mcg/kg/min,iv
+20214994,3080173,2137-02-27 13:24:00,esmolol,Stopped,stop,0,mcg/kg/min,iv
+20214994,4594978,2137-03-08 21:03:00,sodium chloride,[Started],start,5,mL/hour,iv
+20214994,4594978,2137-03-09 7:45:00,sodium chloride,Paused,stop,0,mL/hour,iv
+20214994,4594978,2137-03-09 12:00:00,sodium chloride,[Restarted],start,5,mL/hour,iv
+20214994,4594978,2137-03-10 21:28:00,sodium chloride,Stopped,stop,0,mL/hour,iv
+20214994,6876516,2137-02-28 17:18:00,diltiazem,[Started],start,5,mg/hour,iv
+20214994,6876516,2137-02-28 18:37:00,diltiazem,ChangeDose/Rate,dose_change,10.79622269,mg/hour,iv
+20214994,6876516,2137-02-28 23:07:00,diltiazem,FinishedRunning,stop,0,mg/hour,iv
+22987108,294375,2146-06-22 12:15:00,norepinephrine,[Started],start,0.3003476595,mcg/kg/min,
+22987108,294375,2146-06-22 12:24:00,norepinephrine,ChangeDose/Rate,dose_change,0.4004635557,mcg/kg/min,
+22987108,294375,2146-06-22 12:30:00,norepinephrine,ChangeDose/Rate,dose_change,0.5011515459,mcg/kg/min,
+22987108,294375,2146-06-22 13:39:00,norepinephrine,"Paused, [Restarted]",going,0.4024398513,mcg/kg/min,
+22987108,294375,2146-06-22 13:40:00,norepinephrine,Paused,stop,0,mcg/kg/min,
+22987108,294375,2146-06-22 16:08:00,norepinephrine,[Restarted],start,0.5011515459,mcg/kg/min,
+22987108,294375,2146-06-22 17:54:00,norepinephrine,FinishedRunning,stop,0,mcg/kg/min,
+28662225,1771638,2156/4/22 0:15,dextrose,[Started],start,8.064516068,mL/hour,
+28662225,1771638,2156/4/22 0:45,dextrose,ChangeDose/Rate,dose_change,6.450202942,mL/hour,
+28662225,1771638,2156/4/22 2:11,dextrose,ChangeDose/Rate,dose_change,8.06092453,mL/hour,
+28662225,1771638,2156/4/22 5:02,dextrose,ChangeDose/Rate,dose_change,6.447928429,mL/hour,
+28662225,1771638,2156/4/22 6:08,dextrose,ChangeDose/Rate,dose_change,4.83594656,mL/hour,
+28662225,1771638,2156/4/22 7:38,dextrose,Paused,stop,0,mL/hour,
+28662225,1771638,2156/4/22 0:15,dopamine,[Started],start,5.001250189,mcg/kg/min,
+28662225,1771638,2156/4/22 0:45,dopamine,ChangeDose/Rate,dose_change,4.000125919,mcg/kg/min,
+28662225,1771638,2156/4/22 2:11,dopamine,ChangeDose/Rate,dose_change,4.999022931,mcg/kg/min,
+28662225,1771638,2156/4/22 5:02,dopamine,ChangeDose/Rate,dose_change,3.99871543,mcg/kg/min,
+28662225,1771638,2156/4/22 6:08,dopamine,ChangeDose/Rate,dose_change,2.999036573,mcg/kg/min,
+28662225,1771638,2156/4/22 7:38,dopamine,Paused,stop,0,mcg/kg/min,

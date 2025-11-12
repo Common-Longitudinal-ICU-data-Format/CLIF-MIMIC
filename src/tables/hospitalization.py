@@ -2,14 +2,21 @@
 import numpy as np
 import pandas as pd
 import duckdb
+from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
+import pandera.pandas as pa
+from pandera.dtypes import Float32
+from typing import Dict, List
+import json
 import logging
 from importlib import reload
 import src.utils
 # reload(src.utils)
 from src.utils import construct_mapper_dict, load_mapping_csv, \
-    rename_and_reorder_cols, save_to_rclif, setup_logging, mimic_table_pathfinder, convert_tz_to_utc
+    rename_and_reorder_cols, save_to_rclif, mimic_table_pathfinder, convert_tz_to_utc
+from src.utils_qa import all_null_check
+from src.logging_config import setup_logging, get_logger
 
-setup_logging()
+logger = get_logger('tables.hospitalization')
 HOSP_COL_NAMES = [
     "patient_id", "hospitalization_id", "hospitalization_joined_id", "admission_dttm", "discharge_dttm",
     "age_at_admission", "admission_type_name", "admission_type_category",
@@ -24,18 +31,81 @@ HOSP_COL_RENAME_MAPPER = {
     "discharge_location": "discharge_name"
 }
 
-def _main():
-    """
-    Processes the `admissions` and `patients` tables to create the CLIF hospitalization table.
-    """
-    logging.info("starting to build clif hospitalization table -- ")
-    discharge_mapping = load_mapping_csv("discharge")
+ADMISSION_TYPE_MAPPER = {
+    "DIRECT EMER.": "ed",
+    "OBSERVATION ADMIT": "ed",
+    "URGENT": "ed",
+    "EW EMER.": "ed",	
+    "EU OBSERVATION": "ed",
+    "DIRECT OBSERVATION": "direct",
+    "ELECTIVE": "elective",
+    "AMBULATORY OBSERVATION": "direct",
+    "SURGICAL SAME DAY ADMISSION": "elective",
+    None: "other"
+}
+
+ADMISSION_TYPE_CATEGORIES = [
+    "ed", "direct", "elective", "other", "facility", "osh"
+]
+
+DISCHARGE_CATEGORIES = [
+    "Home", 
+    "Skilled Nursing Facility (SNF)", 
+    "Expired", 
+    "Acute Inpatient Rehab Facility", 
+    "Hospice", 
+    "Long Term Care Hospital (LTACH)", 
+    "Acute Care Hospital", 
+    "Group Home", 
+    "Chemical Dependency", 
+    "Against Medical Advice (AMA)", 
+    "Assisted Living", 
+    "Still Admitted", 
+    "Missing", 
+    "Other", 
+    "Psychiatric Hospital", 
+    "Shelter", 
+    "Jail"
+    ]
+
+CLIF_HOSP_SCHEMA = pa.DataFrameSchema(
+    {
+        "patient_id": pa.Column(str, nullable=False),
+        "hospitalization_id": pa.Column(str, nullable=False),
+        "hospitalization_joined_id": pa.Column(str, nullable=True),
+        "admission_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False), 
+        "discharge_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False),
+        "age_at_admission": pa.Column(int), 
+        "admission_type_name": pa.Column(str, nullable=True), 
+        "admission_type_category": pa.Column(str, checks=[pa.Check.isin(ADMISSION_TYPE_CATEGORIES)], nullable=False),
+        "discharge_name": pa.Column(str, nullable=True), 
+        "discharge_category": pa.Column(str, checks=[pa.Check.isin(DISCHARGE_CATEGORIES)], nullable=False), 
+        "zipcode_nine_digit": pa.Column(str, checks=[all_null_check], nullable=True), 
+        "zipcode_five_digit": pa.Column(str, checks=[all_null_check], nullable=True), 
+        "census_block_code": pa.Column(str, checks=[all_null_check], nullable=True), 
+        "census_block_group_code": pa.Column(str, checks=[all_null_check], nullable=True), 
+        "census_tract": pa.Column(str, checks=[all_null_check], nullable=True), 
+        "state_code": pa.Column(str, checks=[all_null_check], nullable=True), 
+        "county_code": pa.Column(str, checks=[all_null_check], nullable=True),
+    },
+    strict=True,
+)
+
+def discharge_mapping() -> pd.DataFrame:
+    return load_mapping_csv("discharge")
+
+def discharge_mapper(discharge_mapping: pd.DataFrame) -> Dict:
     discharge_mapper = construct_mapper_dict(
-        discharge_mapping, "discharge_location", "disposition_category"
-        )
+        mapping_df=discharge_mapping, 
+        key_col="discharge_location", 
+        value_col="disposition_category"
+    )
     # add mapping of all NA discharge_location to "missing"
     discharge_mapper[None] = "Missing" # OR: discharge_mapper[np.nan] = 'Missing'
-        
+    return discharge_mapper
+
+def extracted_and_translated(discharge_mapper: Dict) -> pd.DataFrame:
+    logger.info("extracting and mapping columns...")
     query = f"""
     SELECT 
         subject_id,
@@ -51,27 +121,81 @@ def _main():
     LEFT JOIN '{mimic_table_pathfinder("patients")}'
     USING (subject_id)
     """
-    hosp_merged = duckdb.query(query).df()
-    hosp_merged["discharge_category"] = hosp_merged["discharge_location"].map(discharge_mapper)
+    df = duckdb.query(query).df()
+    df["discharge_category"] = df["discharge_location"].map(discharge_mapper)  
+    df["admission_type_category"] = df["admission_type"].map(ADMISSION_TYPE_MAPPER)
+    return df
 
-    # hosp_merged["age_at_admission"] = hosp_merged["anchor_age"] \
-    #     + pd.to_datetime(hosp_merged["admittime"]).dt.year \
-    #     - hosp_merged["anchor_year"]
+def renamed_and_reordered(extracted_and_translated: pd.DataFrame) -> pd.DataFrame:
+    logger.info("renaming and reordering columns...")
+    return rename_and_reorder_cols(extracted_and_translated, HOSP_COL_RENAME_MAPPER, HOSP_COL_NAMES)
 
-    logging.info("renaming, reordering, and recasting columns...")
-    hosp_final = rename_and_reorder_cols(hosp_merged, HOSP_COL_RENAME_MAPPER, HOSP_COL_NAMES)
-
-    for col in hosp_final.columns:
+@tag(property="final")
+def recast(renamed_and_reordered: pd.DataFrame) -> pd.DataFrame:
+    logger.info("recasting columns...")
+    df = renamed_and_reordered
+    for col in df.columns:
         if "dttm" in col:
-            hosp_final[col] = pd.to_datetime(hosp_final[col], errors="coerce")
-            hosp_final[col] = convert_tz_to_utc(hosp_final[col])
+            df[col] = pd.to_datetime(df[col], errors="coerce")
+            df[col] = convert_tz_to_utc(df[col])
         elif col == "age_at_admission":
             continue
         else:
-            hosp_final[col] = hosp_final[col].astype("string")
+            df[col] = df[col].astype("string")
+    return df
 
-    save_to_rclif(hosp_final, "hospitalization")
-    logging.info("output saved to a parquet file, everything completed for the hospitalization table!")
+@tag(property="test")
+def schema_tested(recast: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
+    try:
+        CLIF_HOSP_SCHEMA.validate(recast, lazy=True)
+        return True
+    except pa.errors.SchemaErrors as exc:
+        logger.error(json.dumps(exc.message, indent=2))
+        logger.error("Schema errors and failure cases:")
+        logger.error(exc.failure_cases)
+        logger.error("\nDataFrame object that failed validation:")
+        logger.error(exc.data)
+        return exc
 
+@datasaver()
+def save(recast: pd.DataFrame) -> dict:
+    logger.info("saving to rclif...")
+    save_to_rclif(recast, "hospitalization")
+    
+    metadata = {
+        "table_name": "hospitalization"
+    }
+    
+    logger.info("output saved to a parquet file, everything completed for the hospitalization table!")
+    return metadata
+
+def _main():
+    logger.info("starting to build clif hospitalization table -- ")
+    from hamilton import driver
+    import src.tables.hospitalization as hospitalization
+    dr = (
+        driver.Builder()
+        .with_modules(hospitalization)
+        # .with_cache()
+        .build()
+    )
+    dr.execute(["save"])
+
+def _test():
+    logger.info("testing all...")
+    from hamilton import driver
+    import src.tables.hospitalization as hospitalization
+    dr = (
+        driver.Builder()
+        .with_modules(hospitalization)
+        .build()
+    )
+    all_nodes = dr.list_available_variables()
+    test_nodes = [node.name for node in all_nodes if 'test' == node.tags.get('property')]
+    output = dr.execute(test_nodes)
+    logger.debug(f"Test output: {output}")
+    return output
+    
 if __name__ == "__main__":
+    setup_logging()
     _main()

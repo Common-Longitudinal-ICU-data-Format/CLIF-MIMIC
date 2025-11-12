@@ -1,17 +1,17 @@
 itemid,label,mode_name,count,mode_category,coherence,status,note,,device_category,count
-223849,Ventilator Mode,CPAP/PSV,192510,Pressure Support/CPAP,based on mCIDE mapping,coded/validated by K. Smith,seems a lot of mixed are classified into other,,Assist Control-Volume Control,9
-223849,Ventilator Mode,CMV/ASSIST/AutoFlow,175435,Assist Control-Volume Control,,coded/validated by K. Smith,,,Pressure Support/CPAP,12
-223849,Ventilator Mode,CMV/ASSIST,17945,Assist Control-Volume Control,,coded/validated by K. Smith,,,Pressure Control,4
-223849,Ventilator Mode,MMV/PSV/AutoFlow,12726,Other,not covered by mCIDE mapping,coded/validated by K. Smith,,,Pressure-Regulated Volume Control,6
+223849,Ventilator Mode,CPAP/PSV,192510,Pressure Support/CPAP,based on mCIDE mapping,coded/validated by K. Smith,seems a lot of mixed are classified into other,,Assist Control-Volume Control,7
+223849,Ventilator Mode,CMV/ASSIST/AutoFlow,175435,Assist Control-Volume Control,,coded/validated by K. Smith,,,Pressure Support/CPAP,11
+223849,Ventilator Mode,CMV/ASSIST,17945,Assist Control-Volume Control,,coded/validated by K. Smith,,,Pressure Control,6
+223849,Ventilator Mode,MMV/PSV/AutoFlow,12726,SIMV,not covered by mCIDE mapping,updated by S. Guleria,"This is a Draeger vent that fundamentally is SIMV, but adjusts the rate to target a minute ventilation. SIMV feels appropriate. (Previously 'other')",,Pressure-Regulated Volume Control,4
 223849,Ventilator Mode,Standby,11044,NO MAPPING,not covered by mCIDE mapping,coded/validated by K. Smith,"this just mean it is not on right? it should be no mapping?
 
-Yes, but could represent the time when mechanical ventilation was stopped... may be helpful for measuring how long someone was ventilated for?",,SIMV,10
-223849,Ventilator Mode,PSV/SBT,8550,Pressure Support/CPAP,,coded/validated by K. Smith,,,Blow by,1
+Yes, but could represent the time when mechanical ventilation was stopped... may be helpful for measuring how long someone was ventilated for?",,SIMV,14
+223849,Ventilator Mode,PSV/SBT,8550,Pressure Support/CPAP,,coded/validated by K. Smith,,,Blow by,0
 223849,Ventilator Mode,PRVC/AC,5029,Pressure-Regulated Volume Control,,coded/validated by K. Smith,,,Other,13
 223849,Ventilator Mode,PCV+Assist,4152,Pressure Control,,coded/validated by K. Smith,,,Volume Support,1
-223849,Ventilator Mode,CPAP/PSV+ApnVol,3410,Pressure-Regulated Volume Control,,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,SIMV/PSV/AutoFlow,1947,SIMV,,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,MMV/PSV,1880,Other,based on mCIDE mapping,coded/validated by K. Smith,,,,
+223849,Ventilator Mode,CPAP/PSV+ApnVol,3410,Pressure Support/CPAP,,updated by S. Guleria,"This was mapped as PRVC, but I think PS/CPAP is more appropriate. ApnVol just refers to a backup rate as a safety feature rather than targeting a specific volume as implied by PRVC",,,
+223849,Ventilator Mode,SIMV/PSV/AutoFlow,1947,SIMV,based on mCIDE mapping,coded/validated by K. Smith,,,,
+223849,Ventilator Mode,MMV/PSV,1880,SIMV,,updated by S. Guleria,"This is a Draeger vent that fundamentally is SIMV, but adjusts the rate to target a minute ventilation. SIMV feels appropriate. (Previously 'Other')",,,
 223849,Ventilator Mode,CPAP,1243,Pressure Support/CPAP,,coded/validated by K. Smith,,,,
 223849,Ventilator Mode,APRV,1046,Pressure-Regulated Volume Control,based on mCIDE mapping,updated by W. Parker,,,,
 223849,Ventilator Mode,CMV/AutoFlow,1030,Assist Control-Volume Control,,coded/validated by K. Smith,,,,
@@ -21,36 +21,36 @@ Yes, but could represent the time when mechanical ventilation was stopped... may
 223849,Ventilator Mode,PCV+,451,Pressure Control,,coded/validated by K. Smith,,,,
 223849,Ventilator Mode,CMV,430,Assist Control-Volume Control,,coded/validated by K. Smith,,,,
 223849,Ventilator Mode,PCV+/PSV,395,Pressure Control,not covered by mCIDE mapping,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,PRES/AC,320,Assist Control-Volume Control,,coded/validated by K. Smith,,,,
+223849,Ventilator Mode,PRES/AC,320,Pressure Control,,updated by S. Guleria,Previously mapped to ACVC. PRES/AC refers to pressure control assist control,,,
 223849,Ventilator Mode,SIMV/PSV,310,SIMV,,coded/validated by K. Smith,,,,
 223849,Ventilator Mode,APV (cmv),305,Pressure-Regulated Volume Control,,updated by W. Parker,,,,
 223849,Ventilator Mode,SPONT,199,Pressure Support/CPAP,not covered by mCIDE mapping,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,MMV,189,Other,based on mCIDE mapping,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,Apnea Ventilation,127,Blow by,not covered by mCIDE mapping,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,APRV/Biphasic+ApnVol,105,Other,,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,MMV/AutoFlow,67,Other,,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,APRV/Biphasic+ApnPress,34,Pressure-Regulated Volume Control,,updated by W. Parker,,,,
+223849,Ventilator Mode,MMV,189,SIMV,based on mCIDE mapping,updated by S. Guleria,"This is a Draeger vent that fundamentally is SIMV, but adjusts the rate to target a minute ventilation. SIMV feels appropriate. (Previously 'Other')",,,
+223849,Ventilator Mode,Apnea Ventilation,127,Other,not covered by mCIDE mapping,updated by S. Guleria,"Apnea ventilation refers to a backup mode when the patient stops spontaneously breathing, and I do not believe it corresponds to any particular category of mode. (Previously 'Blow by')",,,
+223849,Ventilator Mode,APRV/Biphasic+ApnVol,105,Other,,updated by S. Guleria,APRV is its own mode. Updated to other 10/31,,,
+223849,Ventilator Mode,MMV/AutoFlow,67,SIMV,,updated by S. Guleria,"This is a Draeger vent that fundamentally is SIMV, but adjusts the rate to target a minute ventilation. SIMV feels appropriate. (previously 'other')",,,
+223849,Ventilator Mode,APRV/Biphasic+ApnPress,34,Other,,updated by S. Guleria,APRV is its own mode. Updated to other 10/31,,,
 223849,Ventilator Mode,SIMV/PRES,31,SIMV,not covered by mCIDE mapping,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,PRVC/SIMV,23,Other,not covered by mCIDE mapping,coded/validated by K. Smith,,,,
+223849,Ventilator Mode,PRVC/SIMV,23,SIMV,not covered by mCIDE mapping,updated by S. Guleria,"This is referring to SIMV where the controlled breaths are PRVC, updated to SIMV 10/31",,,
 223849,Ventilator Mode,Ambient,21,NO MAPPING,,coded/validated by K. Smith,,,,
 223849,Ventilator Mode,SIMV,20,SIMV,,coded/validated by K. Smith,,,,
 223849,Ventilator Mode,SIMV/AutoFlow,16,SIMV,,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,SYNCHRON MASTER,16,SIMV,not covered by mCIDE mapping,coded/validated by K. Smith,,,,
+223849,Ventilator Mode,SYNCHRON MASTER,16,Other,not covered by mCIDE mapping,updated by S. Guleria,"independent lung vent mode, switched to other 10/31",,,
 223849,Ventilator Mode,CPAP/PSV+Apn TCPL,12,Pressure Support/CPAP,,coded/validated by K. Smith,,,,
 223849,Ventilator Mode,SIMV/VOL,11,SIMV,,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,SYNCHRON SLAVE,5,Other,not covered by mCIDE mapping,coded/validated by K. Smith,,,,
-223849,Ventilator Mode,P-CMV,2,Assist Control-Volume Control,,coded/validated by K. Smith,,,,
+223849,Ventilator Mode,SYNCHRON SLAVE,5,Other,not covered by mCIDE mapping,updated by S. Guleria,"independent lung vent mode, switched to other 10/31",,,
+223849,Ventilator Mode,P-CMV,2,Pressure Control,,updated by S. Guleria,Previously ACVC,,,
 223849,Ventilator Mode,(S) CMV,1,Assist Control-Volume Control,,coded/validated by K. Smith,,,,
 229314,Ventilator Mode (Hamilton),APV (cmv),93563,Pressure-Regulated Volume Control,,updated by W. Parker,,,,
 229314,Ventilator Mode (Hamilton),SPONT,91535,Pressure Support/CPAP,not covered by mCIDE mapping,coded/validated by K. Smith,,,,
-229314,Ventilator Mode (Hamilton),ASV,8566,Volume Support,based on mCIDE mapping,updated by Z. Liao,,,,
-229314,Ventilator Mode (Hamilton),VS,2779,Pressure Support/CPAP,,updated by W. Parker,,,,
+229314,Ventilator Mode (Hamilton),ASV,8566,Other,based on mCIDE mapping,updated by S. Guleria,ASV is a Hamilton-specific mode that is pressure controlled but highly unique. Deserves its own mapping (Previously VS),,,
+229314,Ventilator Mode (Hamilton),VS,2779,Volume Support,,updated by Z. Liao,,,,
 229314,Ventilator Mode (Hamilton),P-CMV,2531,Pressure Control,,updated by W. Parker,,,,
-229314,Ventilator Mode (Hamilton),NIV,1550,Other,based on mCIDE mapping,coded/validated by K. Smith,,,,
+229314,Ventilator Mode (Hamilton),NIV,1550,Other,based on mCIDE mapping,coded/validated by K. Smith,not being used as an invasive vent when in NIV mode,,,
 229314,Ventilator Mode (Hamilton),Ambient,1265,NO MAPPING,,coded/validated by K. Smith,,,,
 229314,Ventilator Mode (Hamilton),(S) CMV,603,Assist Control-Volume Control,,coded/validated by K. Smith,,,,
-229314,Ventilator Mode (Hamilton),APRV,474,Other,based on mCIDE mapping,coded/validated by K. Smith,,,,
-229314,Ventilator Mode (Hamilton),NIV-ST,152,Pressure Support/CPAP,,coded/validated by K. Smith,,,,
+229314,Ventilator Mode (Hamilton),APRV,474,Other,based on mCIDE mapping,updated by S. Guleria,Previously 'PRVC',,,
+229314,Ventilator Mode (Hamilton),NIV-ST,152,Other,,updated by S. Guleria,Previously 'PS/CPAP',,,
 229314,Ventilator Mode (Hamilton),APV (simv),83,SIMV,,coded/validated by K. Smith,,,,
 229314,Ventilator Mode (Hamilton),SIMV,21,SIMV,based on mCIDE mapping,coded/validated by K. Smith,,,,
 229314,Ventilator Mode (Hamilton),P-SIMV,12,SIMV,,coded/validated by K. Smith,,,,
