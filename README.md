@@ -1,25 +1,21 @@
 # MIMIC-IV to CLIF ETL Pipeline
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10.5+](https://img.shields.io/badge/python-3.10.5+-blue.svg)](https://www.python.org/downloads/)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![CLIF 2.1.0](https://img.shields.io/badge/CLIF-2.1.0-green.svg)](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0)
 [![MIMIC-IV 3.1](https://img.shields.io/badge/MIMIC--IV-3.1-orange.svg)](https://physionet.org/content/mimiciv/)
 
-This repository provides an ETL pipeline to transform the [MIMIC-IV](https://mimic.mit.edu/) database into the [Common Longitudinal ICU data Format (CLIF)](https://clif-consortium.github.io/website/).
-
-**Current Release:** v1.0.0 (October 2025)
-
-**Transforms:** MIMIC-IV 3.1 → CLIF 2.1.0
+This repository provides an ETL pipeline to transform the [MIMIC-IV](https://mimic.mit.edu/) database into the [Common Longitudinal ICU data Format (CLIF)](https://clif-consortium.github.io/website/). The latest release is v1.0.0 (October 2025) and transforms MIMIC-IV 3.1 into CLIF 2.1.0.
 
 ## Table of Contents
 
-- [Getting Started](#getting-started)
+- [Getting started](#getting-started)
 - [Prerequisites](#prerequisites)
 - [Usage](#usage)
-  - [Add Configuration](#add-configuration)
-  - [Confirm Version](#confirm-version)
-  - [Run the Pipeline](#run-the-pipeline)
+  - [Add configuration](#add-configuration)
+  - [Confirm version](#confirm-version)
+  - [Run the pipeline](#run-the-pipeline)
 - [Output](#output)
 - [Resources](#resources)
 - [Contributing](#contributing)
@@ -30,7 +26,7 @@ This repository provides an ETL pipeline to transform the [MIMIC-IV](https://mim
 > [!NOTE]
 > This project is being submitted to PhysioNet. All tables will be available for direct download for MIMIC-credentialed users when the submission is approved. For any future releases, we will upload the download-ready CLIF tables to the PhysioNet [project page](https://physionet.org/content/mimic-iv-ext-clif), but in the event of any lag, please refer to this repository for the code to generate the most up-to-date version
 
-To run the pipeline once you are credentialed on PhysioNet, first review the [change log](CHANGELOG.md) to find the latest or preferred version; then follow the instructions in the [Usage](#usage) section below to generate the dataset.
+To run the pipeline, first review the [change log](CHANGELOG.md) to find the latest or preferred version; then follow the instructions in the [Usage](#usage) section below to generate the dataset.
 
 For mapping decisions, see [the MIMIC-to-CLIF mapping spreadsheet](https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/edit?usp=sharing) for details.
 
@@ -40,16 +36,16 @@ For issues encountered and decisions made during the mapping process, see the [I
 
 Before running the pipeline, ensure you have:
 
-- **PhysioNet credentials**: [Access to the MIMIC-IV dataset](https://mimic.mit.edu/docs/gettingstarted/) on PhysioNet
+- PhysioNet credentials: [Access to the MIMIC-IV dataset](https://mimic.mit.edu/docs/gettingstarted/) on PhysioNet
 
-- **Python 3.8+**: Required for running the pipeline
+- MIMIC-IV 3.1 CSV files downloaded from PhysioNet on your machine
 
-- **Disk space**:
+- Python 3.10.5+ and Git installed on your machine
+
+- Disk space:
   - ~30 GB for MIMIC-IV 3.1 CSV files (compressed)
   - ~15 GB for MIMIC-IV Parquet conversion
   - ~1 GB for CLIF output tables
-
-- **Git**: For cloning the repository and managing versions
 
 ## Usage
 If you are an existing user, please `git pull` the relevant branch and refer to the [change log](CHANGELOG.md) for the updated CLIF tables that need to be re-generated.
