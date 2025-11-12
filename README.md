@@ -133,7 +133,7 @@ git branch
 
 [uv](https://docs.astral.sh/uv/) is a fast Python package manager that simplifies dependency management.
 
-1. **Install uv** (if not already installed):
+1. Install uv (if not already installed):
 
    ```bash
    # macOS/Linux
@@ -143,7 +143,7 @@ git branch
    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
    ```
 
-2. **Run the pipeline** (once on the correct branch):
+2. Run the pipeline (once on the correct branch):
 
    ```bash
    uv run python main.py
@@ -175,9 +175,7 @@ After running the pipeline, you'll find the following outputs:
 
 Generated Parquet files will be in `output/rclif-2.1.0/` (or your custom output directory name).
 
-**Typical table sizes:**
-
-| Table | Size |
+| Table | Typical Size |
 |-------|------|
 | `vitals` | ~265 MB |
 | `labs` | ~344 MB |
