@@ -1,4 +1,4 @@
-.PHONY: help mo test-med
+.PHONY: help mo test-med freeze
 
 mo:
 	uv run marimo edit --watch
@@ -8,3 +8,6 @@ test-med:
 
 run:
 	uv run python main.py
+
+freeze:
+	uv pip compile pyproject.toml -o requirements.txt
