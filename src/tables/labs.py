@@ -39,7 +39,7 @@ CLIF_LABS_SCHEMA = pa.DataFrameSchema(
         "lab_collect_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False),
         "lab_result_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False), 
         "lab_order_name": pa.Column(str, checks=[all_null_check], nullable=True),
-        "lab_order_category": pa.Column(str, checks=[all_null_check], nullable=True),
+        "lab_order_category": pa.Column(str, nullable=False),
         "lab_name": pa.Column(str, nullable=False),
         "lab_category": pa.Column(str, checks=[pa.Check.isin(_permitted_lab_categories())], nullable=False),
         "lab_value": pa.Column(str, nullable=True),
@@ -222,10 +222,22 @@ def duplicates_removed(null_result_dttm_removed: pd.DataFrame) -> pd.DataFrame:
     )
     return df
 
-@tag(property="test")
-def schema_tested(duplicates_removed: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
-    logger.info("testing schema...")
+def lab_order_category_mapper() -> dict:
+    labs_order_category_mapping = pd.read_csv("data/mcide/clif_labs_order_categories.csv")
+    return construct_mapper_dict(
+        labs_order_category_mapping, "lab_category", "lab_order_category", 
+    )
+
+def lab_order_category_mapped(duplicates_removed: pd.DataFrame, lab_order_category_mapper: dict) -> pd.DataFrame:
+    logger.info("mapping lab order category...")
     df = duplicates_removed
+    df["lab_order_category"] = df["lab_category"].map(lab_order_category_mapper)
+    return df
+    
+@tag(property="test")
+def schema_tested(lab_order_category_mapped: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
+    logger.info("testing schema...")
+    df = lab_order_category_mapped
     try:
         CLIF_LABS_SCHEMA.validate(df, lazy=True)
         return True
@@ -238,9 +250,9 @@ def schema_tested(duplicates_removed: pd.DataFrame) -> bool | pa.errors.SchemaEr
         return exc
 
 @datasaver()
-def save(duplicates_removed: pd.DataFrame) -> dict:
+def save(lab_order_category_mapped: pd.DataFrame) -> dict:
     logger.info("saving to rclif...")
-    save_to_rclif(duplicates_removed, "labs")
+    save_to_rclif(lab_order_category_mapped, "labs")
     
     metadata = {
         "table_name": "labs"
