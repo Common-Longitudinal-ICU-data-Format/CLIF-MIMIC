@@ -1,20 +1,26 @@
 # MIMIC-IV to CLIF ETL Pipeline
 
-This repository provides the ETL pipeline to transform the MIMIC-IV database into the Common Longitudinal ICU data Format (CLIF). The latest release is [v0.2.0](CHANGELOG.md#latest-v020---2025-05-13), released in May 2025, and transforms [MIMIC-IV 3.1](https://physionet.org/content/mimiciv/3.1/) into [CLIF 2.1.0](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.1.0.html). 
+This repository provides the ETL pipeline to transform the MIMIC-IV database into the Common Longitudinal ICU data Format (CLIF). The latest release is v1.0.0, released in October 2025, and transforms MIMIC-IV 3.1 into CLIF 2.1.0. 
 
+## Getting started
 
-#### Table of contents
-- [Usage](#usage)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [License](#license)
+> *Note: This project is being submitted to PhysioNet and all the tables will be available for direct download for MIMIC-credentialed users when the submission is approved. For any future releases, we will upload the download-ready CLIF tables to the PhysioNet [project page](https://physionet.org/content/mimic-iv-ext-clif), but in the event of any lag, please refer to this repository for the code to generate the most up-to-date version.*
+
+To access this dataset, make sure you have acquired [access to the MIMIC-IV dataset](https://mimic.mit.edu/docs/gettingstarted/) on PhysioNet.
+
+To run the pipeline once you are credentialed on PhysioNet, first review the [change log](CHANGELOG.md) to find the latest or preferred version; then follow the instructions in the [Usage](#usage) section below to generate the dataset.
+
+For mapping decisions, see [the MIMIC-to-CLIF google spreadsheet](https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/edit?usp=sharing.) for details.
+
+For issues encountered and decisions made during the mapping process, see the [ISSUESLOG](ISSUESLOG.md).
+
 
 ## Usage
 If you are an existing user, please `git pull` the relevant branch and refer to the [change log](CHANGELOG.md) for the updated CLIF tables that need to be re-generated.
 
 If you are a new user, fork your own copy of this repository, and `git clone` to your local directory. 
 
-### Add your configuration
+### Add configuration
 
 #### Required
 
@@ -64,7 +70,7 @@ The following example shows I have specified two sets of paths corresponding to 
 
 4. You can also store multiple versions of the CLIF table outputs by customizing `clif_output_dir_name`. If you leave it blank with `""`, the program would default to naming it `f"rclif-{CLIF_VERSION}"`. Using this default is recommended if you want to access and store multiple CLIF versions at the same time. 
 
-### Run the pipeline
+### Confirm version
 After navigating to the project directory, first make sure you are on the correct branch -- which should be `main` if you are using a stable version; or a branch by the corresponding version name, e.g. branch `release/0.2.0`, if you are using a beta version.
 
 To switch to branch `release/0.2.0`, for example, run:
@@ -74,9 +80,34 @@ git fetch
 # switch to branch release/0.2.0
 git switch release/0.2.0
 ```
-- to double check, you can run `git branch` to check that the intended branch is correctly identified in the highlight of the output.
+- to double check, you can run `git branch` to check that the intended branch is correctly identified in the highlighted output.
 
-Then, on the correct branch, run the following *line by line*:
+
+### Run the pipeline
+
+#### Option 1: use `uv` (recommended)
+
+[uv](https://docs.astral.sh/uv/) is a fast Python package manager that simplifies dependency management.
+
+1. Install uv (if not already installed):
+
+   ```bash
+   # macOS/Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Windows (PowerShell)
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+2. Once you are on the correct branch, run:
+    ```bash
+    uv run python main.py
+    ```
+
+
+#### Option 2: use conventional Python
+
+On the correct branch, run the following *line by line*:
 ```sh
 # create a virtual environment
 python3 -m venv .venv/
@@ -91,11 +122,6 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
-## Documentation
-For recent updates and planned future releases, see the [change log](CHANGELOG.md).
-
-For the mapping of data elements from MIMIC-IV to CLIF, see [this spreadsheet](https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/edit?usp=sharing.) for details.
-
 ## Contributing
 To contribute to this open-source project, feel free to :
 1. Open an issue for any bug or new data request.
@@ -105,4 +131,4 @@ To contribute to this open-source project, feel free to :
 ## License
 This project is licensed under the MIT License. 
 
-**Note:** The MIMIC-IV dataset is subject to the **PhysioNet data use agreement**, and users must obtain access through PhysioNet before processing.
+Note: The MIMIC-IV dataset is subject to the PhysioNet data use agreement, and users must obtain access through PhysioNet before processing.
