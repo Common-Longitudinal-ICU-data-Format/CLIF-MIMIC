@@ -79,6 +79,7 @@ The dataset consists of 14 CLIF tables derived from MIMIC-IV v3.1, each stored a
 
 ```
 mimic-iv-ext-clif/
+├── README.md
 ├── clif_patient.parquet
 ├── clif_hospitalization.parquet
 ├── clif_adt.parquet
