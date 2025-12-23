@@ -12,9 +12,7 @@ def _():
 
 
 @app.cell
-def _(os):
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+def _():
     from src import utils
     return
 
