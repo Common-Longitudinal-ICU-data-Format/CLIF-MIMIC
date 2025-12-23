@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.16.4"
+__generated_with = "0.18.2"
 app = marimo.App(width="columns")
 
 
@@ -12,9 +12,7 @@ def _():
 
 
 @app.cell
-def _(os):
-    import sys
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+def _():
     from src import utils
     return
 

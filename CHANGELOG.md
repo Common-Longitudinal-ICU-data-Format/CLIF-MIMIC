@@ -2,10 +2,19 @@
 
 | MIMIC version | CLIF version | Latest CLIF-MIMIC release | Status |
 |-----------------|-----------------|-------------------|---------------------|
-| IV-3.1 | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.0.0](#latest-v100---2025-10-27) | 🧩 partial (✅ stable on the already-released tables) |
+| IV-3.1 | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.0.0](#v100---2025-10-27) | 🧩 partial (✅ stable on the already-released tables) |
 | IV-3.1 | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) | ✅ stable |
 
-## LATEST! \[v1.0.0\] - 2025-10-27
+
+
+## \[v1.1.0\]
+
+### New
+
+-   addition of several `lab_category` in the `labs` table.
+
+
+## \[v1.0.0\] - 2025-10-27
 
 ### Readme
 
