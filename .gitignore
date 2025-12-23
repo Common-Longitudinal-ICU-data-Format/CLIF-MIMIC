@@ -20,6 +20,7 @@ __marimo__/
 .hamilton_cache/
 ._*
 .dev/
+*.pdf
 
 # data
 mimic-data/
