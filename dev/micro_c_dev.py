@@ -248,6 +248,21 @@ def _(all_clif_categories, match_organism_to_category, organism_names, pd):
     _category_counts.columns = ["organism_category", "n_src_organism_name"]
     organism_mapping = organism_mapping.merge(_category_counts, on="organism_category", how="left")
     organism_mapping["n_src_organism_name"] = organism_mapping["n_src_organism_name"].fillna(0).astype(int)
+
+    # Import validated column from fixture CSV (preserves validation status across iterations)
+    _validated_path = "tests/fixtures/mimic-to-clif-mappings - microbiology_culture.csv"
+    _validated_df = pd.read_csv(_validated_path, usecols=["organism_name", "organism_category", "validated"])
+    # Join on both organism_name and organism_category (validation is for a specific mapping pair)
+    organism_mapping = organism_mapping.merge(_validated_df, on=["organism_name", "organism_category"], how="left")
+
+    # Sort: group by organism_category, with highest total n per category at top
+    _category_total_n = organism_mapping.groupby("organism_category")["n"].sum().reset_index()
+    _category_total_n.columns = ["organism_category", "_total_n"]
+    organism_mapping = organism_mapping.merge(_category_total_n, on="organism_category", how="left")
+    organism_mapping = organism_mapping.sort_values(
+        by=["_total_n", "organism_category", "n"],
+        ascending=[False, True, False]
+    ).drop(columns=["_total_n"]).reset_index(drop=True)
     return (organism_mapping,)
 
 
@@ -290,12 +305,6 @@ def _(clif_categories, organism_mapping, pd):
 
 
 @app.cell
-def _(clif_categories):
-    clif_categories
-    return
-
-
-@app.cell
 def _(all_clif_categories, organism_mapping):
     # Validation: Check that ALL 542 categories appear in organism_mapping
     _n_categories_expected = len(all_clif_categories)
@@ -333,7 +342,7 @@ def _(organism_mapping):
     organism_mapping.to_csv(
         "data/mappings/mimic-to-clif-mappings - microbiology_culture.csv",
         index=False
-    )
+    ) 
     return
 
 
