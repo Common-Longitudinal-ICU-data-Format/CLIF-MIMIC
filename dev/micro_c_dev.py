@@ -101,14 +101,43 @@ def _(pd, re):
             name = re.sub(pattern, "", name)
 
         return name.strip()
+    return (normalize_organism_name,)
 
-    def match_organism_to_category(organism_name: str, categories_df) -> tuple:
+
+@app.cell
+def _(clif_categories, normalize_organism_name, pd):
+    # Build example_to_category mapping from organism_name_examples column
+    # This is the PRIMARY matching source
+    example_to_category = {}
+
+    for _, _row in clif_categories.iterrows():
+        cat = _row["organism_category"]
+        if pd.notna(_row["organism_name_examples"]):
+            for ex in str(_row["organism_name_examples"]).split(","):
+                ex_normalized = normalize_organism_name(ex)
+                if ex_normalized:
+                    example_to_category[ex_normalized] = cat
+
+    # Build category info for fallback genus/species matching
+    category_info = []
+    for cat in clif_categories["organism_category"].unique():
+        parts = cat.split("_")
+        is_sp = parts[-1] == "sp" if len(parts) > 1 else False
+        category_info.append((cat, parts, is_sp))
+
+    print(f"Built {len(example_to_category)} example → category mappings")
+    return category_info, example_to_category
+
+
+@app.cell
+def _(category_info, example_to_category, normalize_organism_name):
+    def match_organism_to_category(organism_name: str) -> tuple:
         """
         Match an organism name to a CLIF category.
 
         Returns: (category, match_type, score)
-        - match_type: 'species', 'genus', 'fuzzy', 'special', 'unmatched'
-        - score: 1.0 for exact matches, fuzzy score otherwise
+        - match_type: 'example', 'species', 'genus', 'unmatched'
+        - score: 1.0 for exact matches
         """
         normalized = normalize_organism_name(organism_name)
 
@@ -116,18 +145,15 @@ def _(pd, re):
         if not normalized:
             return ("no_growth", "special", 1.0)
 
-        # Build list of (category, parts, is_sp) for matching
-        category_info = []
-        for cat in categories_df["organism_category"].unique():
-            parts = cat.split("_")
-            is_sp = parts[-1] == "sp" if len(parts) > 1 else False
-            category_info.append((cat, parts, is_sp))
+        # PRIORITY 1: Check against organism_name_examples (exact match)
+        if normalized in example_to_category:
+            return (example_to_category[normalized], "example", 1.0)
 
-        # First pass: find species-level matches (all parts must match)
+        # PRIORITY 2: Species-level matches (all parts must match)
         species_matches = []
         for cat, parts, is_sp in category_info:
             if is_sp:
-                continue  # Skip genus-level for first pass
+                continue  # Skip genus-level for this pass
 
             # Check if ALL parts appear in the organism name
             all_match = all(part in normalized for part in parts)
@@ -139,7 +165,7 @@ def _(pd, re):
             best = max(species_matches, key=len)
             return (best, "species", 1.0)
 
-        # Second pass: genus-level matches (*_sp categories)
+        # PRIORITY 3: Genus-level matches (*_sp categories)
         genus_matches = []
         for cat, parts, is_sp in category_info:
             if not is_sp:
@@ -161,9 +187,10 @@ def _(pd, re):
 
 @app.cell
 def _(
-    clif_categories,
+    example_to_category,
     fuzz,
     match_organism_to_category,
+    normalize_organism_name,
     organism_names,
     pd,
     process,
@@ -171,43 +198,30 @@ def _(
     # Build the organism_mapping table
     results = []
 
-    for _, row in organism_names.to_pandas().iterrows():
-        org_name = row["organism_name"]
-        itemid = row["itemid"]
-        n = row["n"]
+    # Pre-compute example texts for fuzzy matching
+    example_texts = list(example_to_category.keys())
 
-        category, match_type, score = match_organism_to_category(org_name, clif_categories)
+    for _, _row in organism_names.to_pandas().iterrows():
+        org_name = _row["organism_name"]
+        itemid = _row["itemid"]
+        n = _row["n"]
 
-        # If unmatched, try fuzzy matching against organism_name_examples
-        if match_type == "unmatched":
-            # Get all examples
-            examples = []
-            for _, cat_row in clif_categories.iterrows():
-                if pd.notna(cat_row["organism_name_examples"]):
-                    for ex in str(cat_row["organism_name_examples"]).split(","):
-                        ex = ex.strip().lower()
-                        if ex:
-                            examples.append((ex, cat_row["organism_category"]))
+        category, match_type, score = match_organism_to_category(org_name)
 
-            if examples:
-                normalized = org_name.lower().strip() if pd.notna(org_name) else ""
-                if normalized:
-                    # Find best fuzzy match
-                    example_texts = [ex[0] for ex in examples]
-                    match_result = process.extractOne(
-                        normalized,
-                        example_texts,
-                        scorer=fuzz.token_set_ratio
-                    )
-                    if match_result and match_result[1] >= 70:  # 70% threshold
-                        matched_example = match_result[0]
-                        # Find the category for this example
-                        for ex_text, ex_cat in examples:
-                            if ex_text == matched_example:
-                                category = ex_cat
-                                match_type = "fuzzy"
-                                score = match_result[1] / 100.0
-                                break
+        # PRIORITY 4: Fuzzy matching as last resort
+        if match_type == "unmatched" and example_texts:
+            normalized = normalize_organism_name(org_name)
+            if normalized:
+                match_result = process.extractOne(
+                    normalized,
+                    example_texts,
+                    scorer=fuzz.token_set_ratio
+                )
+                if match_result and match_result[1] >= 70:  # 70% threshold
+                    matched_example = match_result[0]
+                    category = example_to_category[matched_example]
+                    match_type = "fuzzy"
+                    score = match_result[1] / 100.0
 
         results.append({
             "organism_name": org_name,
@@ -219,6 +233,11 @@ def _(
         })
 
     organism_mapping = pd.DataFrame(results)
+
+    # Add n_src_organism_name: count of unique organism_names per category
+    category_counts = organism_mapping.groupby("organism_category")["organism_name"].nunique().reset_index()
+    category_counts.columns = ["organism_category", "n_src_organism_name"]
+    organism_mapping = organism_mapping.merge(category_counts, on="organism_category", how="left")
     return (organism_mapping,)
 
 
@@ -258,6 +277,30 @@ def _(clif_categories, organism_mapping, pd):
     for mt, count in coverage_stats["match_type_breakdown"].items():
         print(f"  {mt}: {count}")
     return (unmatched_categories_df,)
+
+
+@app.cell
+def _(clif_categories):
+    clif_categories
+    return
+
+
+@app.cell
+def _(clif_categories, organism_mapping):
+    # Validation: Check that we can account for all 542 categories
+    n_categories_expected = 542
+    n_categories_in_clif = clif_categories["organism_category"].nunique()
+    n_categories_matched = organism_mapping["organism_category"].nunique()
+
+    print(f"=== Validation ===")
+    print(f"Expected categories: {n_categories_expected}")
+    print(f"Categories in CLIF file: {n_categories_in_clif}")
+    print(f"Categories matched in mapping: {n_categories_matched}")
+
+    # This assertion will fail if not all categories are represented
+    assert n_categories_in_clif == n_categories_expected, \
+        f"CLIF file has {n_categories_in_clif} categories, expected {n_categories_expected}"
+    return
 
 
 @app.cell
