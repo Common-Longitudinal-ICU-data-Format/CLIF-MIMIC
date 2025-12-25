@@ -15,12 +15,14 @@ output/*
 logs/*
 # tests/  # removed - tests should be version controlled
 config/config.json
+config/config.yaml
 __marimo__/
 
 .hamilton_cache/
 ._*
 .dev/
 *.pdf
+tests/fixtures/archive/
 
 # data
 mimic-data/
