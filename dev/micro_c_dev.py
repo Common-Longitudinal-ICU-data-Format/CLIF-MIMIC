@@ -11,31 +11,19 @@ def _():
     import pandas as pd
     import re
     import logging, duckdb, os
-    from Levenshtein import distance as levenshtein_distance
+    from Levenshtein import distance as levenshtein_distance, jaro_winkler
     from src.utils import fetch_mimic_events, load_mapping_csv, \
         get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
         convert_and_sort_datetime, setup_logging, search_mimic_items, mimic_table_pathfinder, \
         resave_mimic_table_from_csv_to_parquet
     return (
+        jaro_winkler,
         levenshtein_distance,
         mimic_table_pathfinder,
         mo,
         pd,
         re,
-        search_mimic_items,
     )
-
-
-@app.cell
-def _():
-    # resave_mimic_table_from_csv_to_parquet(table = 'hcpcsevents')
-    return
-
-
-@app.cell
-def _(search_mimic_items):
-    search_mimic_items('oxygen', for_labs=True)
-    return
 
 
 @app.cell
@@ -78,7 +66,7 @@ def _(pd):
 
 
 @app.cell
-def _(levenshtein_distance, pd, re):
+def _(jaro_winkler, levenshtein_distance, pd, re):
     def split_to_subcomponents(s: str) -> set:
         """Split string by space/punctuation, lowercase, filter empty strings."""
         if pd.isna(s) or s is None:
@@ -86,16 +74,29 @@ def _(levenshtein_distance, pd, re):
         # Split by space, underscore, comma, hyphen, slash, parentheses
         parts = re.split(r'[\s_,\-/()]+', str(s).lower().strip())
         # Filter out empty strings and common noise words
-        noise_words = {'', 'sp', 'species', 'spp', 'formerly', 'not'}
-        return {p for p in parts if p and p not in noise_words}
+        noise_words = {'', 'formerly', 'not'}
+        # Normalize 'species' and 'spp' to 'sp' for exact matching
+        normalized = []
+        for p in parts:
+            if p in noise_words or not p:
+                continue
+            if p in ('species', 'spp'):
+                normalized.append('sp')
+            else:
+                normalized.append(p)
+        return set(normalized)
 
-    def fuzzy_match(s1: str, s2: str, algo: str = "levenshtein") -> bool:
-        """Check if two strings are a fuzzy match."""
+    def fuzzy_match(s1: str, s2: str, algo: str = "jaro_winkler") -> bool:
+        """Check if two strings are a fuzzy match (tolerates end typos, not beginning)."""
+        if algo == "jaro_winkler":
+            # Jaro-Winkler: 1.0 = exact match, higher weight on prefix matching
+            # Threshold 0.9 allows ~2 char difference at end for typical organism names
+            return jaro_winkler(s1, s2) >= 0.9
         if algo == "levenshtein":
             return levenshtein_distance(s1, s2) <= 2
         raise ValueError(f"Unknown algo: {algo}")
 
-    def find_fuzzy_bijection(source_set: set, target_set: set, algo: str = "levenshtein") -> bool:
+    def find_fuzzy_bijection(source_set: set, target_set: set, algo: str = "jaro_winkler") -> bool:
         """Check if each source subcomponent can fuzzy-match to a unique target subcomponent."""
         if len(source_set) != len(target_set):
             return False
@@ -112,13 +113,22 @@ def _(levenshtein_distance, pd, re):
                 return False
         return True
 
-    def find_fuzzy_subset(source_set: set, target_set: set, algo: str = "levenshtein") -> bool:
+    def find_fuzzy_subset(source_set: set, target_set: set, algo: str = "jaro_winkler") -> bool:
         """Check if each target subcomponent can fuzzy-match to some source subcomponent."""
         for _tgt in target_set:
             if not any(fuzzy_match(_src, _tgt, algo) for _src in source_set):
                 return False
         return True
-    return find_fuzzy_bijection, find_fuzzy_subset, split_to_subcomponents
+
+    def genus_fuzzy_matches_source(genus: str, source_set: set, algo: str = "jaro_winkler") -> bool:
+        """Check if genus fuzzy matches at least one source subcomponent."""
+        return any(fuzzy_match(genus, _src, algo) for _src in source_set)
+    return (
+        find_fuzzy_bijection,
+        find_fuzzy_subset,
+        genus_fuzzy_matches_source,
+        split_to_subcomponents,
+    )
 
 
 @app.cell
@@ -126,17 +136,21 @@ def _(clif_categories, split_to_subcomponents):
     # Pre-compute target subcomponents for all organism_categories
     all_clif_categories = list(clif_categories["organism_category"].unique())
     category_subcomponents = {_cat: split_to_subcomponents(_cat) for _cat in all_clif_categories}
+    # Pre-compute genus (first element of category split by '_')
+    category_genus = {_cat: _cat.split('_')[0] for _cat in all_clif_categories}
 
     print(f"Loaded {len(all_clif_categories)} organism categories")
-    return all_clif_categories, category_subcomponents
+    return all_clif_categories, category_genus, category_subcomponents
 
 
 @app.cell
 def _(
     all_clif_categories,
+    category_genus,
     category_subcomponents,
     find_fuzzy_bijection,
     find_fuzzy_subset,
+    genus_fuzzy_matches_source,
     pd,
     split_to_subcomponents,
 ):
@@ -162,8 +176,13 @@ def _(
 
         for _cat in all_clif_categories:
             _target_set = category_subcomponents[_cat]
+            _genus = category_genus[_cat]
 
             if not _target_set:
+                continue
+
+            # Genus must fuzzy match at least one source subcomponent
+            if not genus_fuzzy_matches_source(_genus, _source_set):
                 continue
 
             # PRIORITY 1: Exact bijection
@@ -243,6 +262,11 @@ def _(all_clif_categories, match_organism_to_category, organism_names, pd):
 
     organism_mapping = pd.DataFrame(_results)
 
+    # Add genus column (first element of organism_category split by '_')
+    organism_mapping["genus"] = organism_mapping["organism_category"].apply(
+        lambda x: x.split('_')[0] if pd.notna(x) and x not in ("NO_MAPPING",) else None
+    )
+
     # Add n_src_organism_name: count of unique organism_names per category
     _category_counts = organism_mapping[organism_mapping["organism_name"] != "NOT_AVAILABLE"].groupby("organism_category")["organism_name"].nunique().reset_index()
     _category_counts.columns = ["organism_category", "n_src_organism_name"]
@@ -251,18 +275,23 @@ def _(all_clif_categories, match_organism_to_category, organism_names, pd):
 
     # Import validated column from fixture CSV (preserves validation status across iterations)
     _validated_path = "tests/fixtures/mimic-to-clif-mappings - microbiology_culture.csv"
-    _validated_df = pd.read_csv(_validated_path, usecols=["organism_name", "organism_category", "validated"])
+    _validated_df = pd.read_csv(_validated_path, usecols=["itemid", "organism_category", "validated"])
     # Join on both organism_name and organism_category (validation is for a specific mapping pair)
-    organism_mapping = organism_mapping.merge(_validated_df, on=["organism_name", "organism_category"], how="left")
+    organism_mapping = organism_mapping.merge(_validated_df, on=["itemid", "organism_category"], how="left")
 
-    # Sort: group by organism_category, with highest total n per category at top
+    # Sort: genus with most n first, then organism_category within genus
     _category_total_n = organism_mapping.groupby("organism_category")["n"].sum().reset_index()
     _category_total_n.columns = ["organism_category", "_total_n"]
     organism_mapping = organism_mapping.merge(_category_total_n, on="organism_category", how="left")
+
+    _genus_total_n = organism_mapping.groupby("genus")["n"].sum().reset_index()
+    _genus_total_n.columns = ["genus", "_genus_total_n"]
+    organism_mapping = organism_mapping.merge(_genus_total_n, on="genus", how="left")
+
     organism_mapping = organism_mapping.sort_values(
-        by=["_total_n", "organism_category", "n"],
-        ascending=[False, True, False]
-    ).drop(columns=["_total_n"]).reset_index(drop=True)
+        by=["_genus_total_n", "genus", "organism_category", "match_type", "n"],
+        ascending=[False, True, True, True, False]
+    ).drop(columns=["_total_n", "_genus_total_n"]).reset_index(drop=True)
     return (organism_mapping,)
 
 
@@ -349,12 +378,6 @@ def _(organism_mapping):
 @app.cell
 def _(organism_mapping):
     organism_mapping
-    return
-
-
-@app.cell
-def _(organism_mapping):
-    organism_mapping['organism_category'].nunique()
     return
 
 
