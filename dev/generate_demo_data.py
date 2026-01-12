@@ -1,7 +1,7 @@
 import marimo
 
-__generated_with = "0.16.4"
-app = marimo.App(width="medium")
+__generated_with = "0.18.4"
+app = marimo.App(width="medium", sql_output="pandas")
 
 
 @app.cell
@@ -13,7 +13,7 @@ def _():
 @app.cell
 def _():
     import duckdb
-    return (duckdb,)
+    return
 
 
 @app.cell
@@ -37,7 +37,7 @@ def _():
 
 
 @app.cell
-def _(clif_table_pathfinder, mo):
+def _(clif_table_pathfinder, mo, null):
     demo_cohort_ids = mo.sql(
         f"""
         FROM "{clif_table_pathfinder('hospitalization')}" h
@@ -46,7 +46,7 @@ def _(clif_table_pathfinder, mo):
         SELECT patient_id, hospitalization_id
         """
     )
-    return
+    return (demo_cohort_ids,)
 
 
 @app.cell
@@ -58,31 +58,68 @@ def _():
 
 
 @app.cell
-def _(clif_table_pathfinder, duckdb, output_dir, tables_by_hosp_id):
+def _(clif_table_pathfinder):
+    p = clif_table_pathfinder('patient')
+    p
+    return
+
+
+@app.cell
+def _():
+    import pandas as pd
+    pd.read_parquet('/Users/wliao0504/code/clif/CLIF-MIMIC/output/demo-data-2.1/clif_code_status.parquet')
+    return (pd,)
+
+
+@app.cell
+def _(mo):
+    df = mo.sql(
+        f"""
+        FROM
+            '/Users/wliao0504/code/clif/CLIF-MIMIC/output/demo-data-2.1/clif_patient.parquet'
+        """
+    )
+    return
+
+
+@app.cell
+def _(
+    clif_table_pathfinder,
+    demo_cohort_ids,
+    output_dir,
+    pd,
+    tables_by_hosp_id,
+):
     for _table_name in tables_by_hosp_id:
         _table_path = clif_table_pathfinder(_table_name)
-        _q = f"""
-        FROM '{_table_path}' t
-        INNER JOIN demo_cohort_ids c
-            USING (hospitalization_id)
-        SELECT t.*
-        """
-        _df = duckdb.sql(_q).df()
+        # rewrite using pandas to perform a semi-join
+        _df = pd.read_parquet(_table_path)
+        _df = _df[_df['hospitalization_id'].isin(demo_cohort_ids['hospitalization_id'])]
+        # _q = f"""
+        # FROM '{_table_path}' t
+        # INNER JOIN demo_cohort_ids c
+        #     USING (hospitalization_id)
+        # SELECT t.*
+        # """
+        # _df = duckdb.sql(_q).df()
         _df.to_parquet(output_dir / f'clif_{_table_name}.parquet')
     return
 
 
 @app.cell
-def _(clif_table_pathfinder, duckdb, output_dir, tables_by_pt_id):
+def _(clif_table_pathfinder, demo_cohort_ids, output_dir, pd, tables_by_pt_id):
     for _table_name in tables_by_pt_id:
         _table_path = clif_table_pathfinder(_table_name)
-        _q = f"""
-        FROM '{_table_path}' t
-        INNER JOIN demo_cohort_ids c
-            USING (patient_id)
-        SELECT t.*
-        """
-        _df = duckdb.sql(_q).df()
+        # rewrite using pandas to perform a semi-join
+        _df = pd.read_parquet(_table_path)
+        _df = _df[_df['patient_id'].isin(demo_cohort_ids['patient_id'])]
+        # _q = f"""
+        # FROM '{_table_path}' t
+        # INNER JOIN demo_cohort_ids c
+        #     USING (patient_id)
+        # SELECT t.*
+        # """
+        # _df = duckdb.sql(_q).df()
         _df.to_parquet(output_dir / f'clif_{_table_name}.parquet')
     return
 
