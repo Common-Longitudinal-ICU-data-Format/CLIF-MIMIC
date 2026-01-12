@@ -1,7 +1,7 @@
 import marimo
 
-__generated_with = "0.18.4"
-app = marimo.App(width="columns")
+__generated_with = "0.19.2"
+app = marimo.App(width="columns", sql_output="pandas")
 
 
 @app.cell
@@ -15,14 +15,16 @@ def _():
     from src.utils import fetch_mimic_events, load_mapping_csv, \
         get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
         convert_and_sort_datetime, setup_logging, search_mimic_items, mimic_table_pathfinder, \
-        resave_mimic_table_from_csv_to_parquet
+        resave_mimic_table_from_csv_to_parquet, convert_tz_to_utc
     return (
+        convert_tz_to_utc,
         jaro_winkler,
         levenshtein_distance,
         mimic_table_pathfinder,
         mo,
         pd,
         re,
+        save_to_rclif,
     )
 
 
@@ -55,6 +57,14 @@ def _(mimic_mc_path, mo, null):
         """
     )
     return (organism_names,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # Mapping pipeline
+    """)
+    return
 
 
 @app.cell
@@ -378,6 +388,108 @@ def _(organism_mapping):
 @app.cell
 def _(organism_mapping):
     organism_mapping
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # `fluid_category`
+    """)
+    return
+
+
+@app.cell
+def _(mimic_mc_path, mo, null):
+    _df = mo.sql(
+        f"""
+        FROM '{mimic_mc_path}'
+        SELECT spec_itemid
+            , spec_type_desc as fluid_name
+            , test_name
+            , COUNT(*) as n
+        GROUP BY spec_itemid, spec_type_desc, test_name
+        ORDER BY n DESC
+        """
+    )
+    return
+
+
+@app.cell
+def _(mimic_mc_path, mo, null):
+    _df = mo.sql(
+        f"""
+        FROM '{mimic_mc_path}'
+        SELECT *
+        WHERE spec_type_desc = 'SWAB'
+        """
+    )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # Pipeline
+    """)
+    return
+
+
+@app.cell
+def _():
+    fluid_mapping_path = 'data/mappings/mimic-to-clif-mappings - fluid_category.csv'
+    return (fluid_mapping_path,)
+
+
+@app.cell
+def _(fluid_mapping_path, mimic_mc_path, mo, null):
+    mc_df = mo.sql(
+        f"""
+        FROM '{mimic_mc_path}' me
+        LEFT JOIN '{fluid_mapping_path}' fluid_mapping
+            ON TRIM(me.spec_type_desc) = TRIM(fluid_mapping.fluid_name)
+        SELECT patient_id: me.subject_id::STRING
+            , hospitalization_id: me.hadm_id::STRING
+            , organism_id: me.microevent_id::STRING
+            , order_dttm: COALESCE(me.charttime, me.chartdate)
+            , collect_dttm: COALESCE(me.charttime, me.chartdate)
+            , result_dttm: COALESCE(me.storetime, me.storedate)
+            , fluid_name: me.spec_type_desc
+            , fluid_category: fluid_mapping.fluid_category
+            , method_name: me.test_name
+            -- , method_category: method_mapping.method_category
+            , organism_name: me.org_name
+            --, organism_category: organism_mapping.organism_category; NULL -> 'no_growth'
+            --, organism_group: organism_mapping.organism_group
+            --, lab_loinc_code: NULL
+        WHERE hospitalization_id IS NOT NULL
+        """
+    )
+    return (mc_df,)
+
+
+@app.cell
+def _(convert_tz_to_utc, mc_df):
+    mc_df['order_dttm'] = convert_tz_to_utc(mc_df['order_dttm'])
+    mc_df['collect_dttm'] = convert_tz_to_utc(mc_df['collect_dttm'])
+    mc_df['result_dttm'] = convert_tz_to_utc(mc_df['result_dttm'])
+    return
+
+
+@app.cell
+def _(mc_df):
+    mc_df
+    return
+
+
+@app.cell
+def _(mc_df, save_to_rclif):
+    save_to_rclif(df=mc_df, table_name='microbiology_culture')
     return
 
 
