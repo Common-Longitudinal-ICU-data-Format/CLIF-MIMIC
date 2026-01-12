@@ -30,6 +30,10 @@ dev = [
     "pytest>=8.4.2",
     "sqlglot>=27.18.0",
     "watchdog>=6.0.0",
+    "python-levenshtein>=0.27.3",
+    "rapidfuzz>=3.14.3",
+    "altair>=6.0.0",
+    "vegafusion>=2.0.3",
 ]
 
 [tool.hatch.build.targets.wheel]
