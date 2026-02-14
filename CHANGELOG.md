@@ -2,7 +2,7 @@
 
 | MIMIC version | CLIF version | Latest CLIF-MIMIC release | Status |
 |-----------------|-----------------|-------------------|---------------------|
-| IV-3.1 | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.0.0](#v100---2025-10-27) | 🧩 partial (✅ stable on the already-released tables) |
+| IV-3.1 | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.1.0](#v110---2026-02-13) | 🧩 partial (✅ stable on the already-released tables) |
 | IV-3.1 | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) | ✅ stable |
 
 
@@ -11,6 +11,7 @@
 
 ### Readme
 
+Tables updated: `labs`, `patient_assessments`
 
 ### New
 
