@@ -16,6 +16,7 @@ mimic-iv-ext-clif/
 ├── clif_labs.parquet
 ├── clif_respiratory_support.parquet
 ├── clif_patient_assessments.parquet
+├── clif_patient_assessments_raw_gcs.parquet
 ├── clif_medication_admin_continuous.parquet
 ├── clif_medication_admin_intermittent.parquet
 ├── clif_position.parquet
@@ -23,7 +24,6 @@ mimic-iv-ext-clif/
 ├── clif_code_status.parquet
 ├── clif_hospital_diagnosis.parquet
 └── clif_patient_procedures.parquet
-└── clif_patient_assessments_raw_gcs.parquet
 ```
 
 ## Resources

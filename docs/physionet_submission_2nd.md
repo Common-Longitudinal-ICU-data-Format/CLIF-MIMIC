@@ -22,11 +22,11 @@ MIMIC-IV-Ext-CLIF contains 14 CLIF tables as of the latest CLIF 2.1.0 version, c
 
 *Your background should provide the reader with an introduction to the resource. The section should offer context in which the resource was created and outline your motivations for sharing.*
 
-Each year, more than five million Americans suffer from critical illness, or acute organ failure that necessitates life-sustaining interventions. While electronic health records (EHRs) contain granular data that could inform better understanding and management of critical illness, large-scale EHR research is hampered by challenges related to data handling, security, and standardization \[1\].
+Each year, more than five million Americans suffer from critical illness, or acute organ failure that necessitates life-sustaining interventions. While electronic health records (EHRs) contain granular data that could inform better understanding and management of critical illness, large-scale EHR research is hampered by challenges related to data handling, security, and standardization [1].
 
-To address these issues, a consortium of critical care clinicians and data scientists from over ten U.S. health systems created the Common Longitudinal Intensive Care Unit (ICU) data Format (CLIF). CLIF is an open-source data model that harmonizes a minimum set of ICU Data Elements (mCIDE) to support research in critical care. Its effectiveness has been demonstrated in federated studies analyzing data from over 100,000 ICU patients across multiple health systems, highlighting its utility in reproducible multi-center research, from mortality prediction validation to clinical subphenotyping \[1\].
+To address these issues, a consortium of critical care clinicians and data scientists from over ten U.S. health systems created the Common Longitudinal Intensive Care Unit (ICU) data Format (CLIF). CLIF is an open-source data model that harmonizes a minimum set of ICU Data Elements (mCIDE) to support research in critical care. Its effectiveness has been demonstrated in federated studies analyzing data from over 100,000 ICU patients across multiple health systems, highlighting its utility in reproducible multi-center research, from mortality prediction validation to clinical subphenotyping [1].
 
-However, CLIF implementation requires substantial data science and clinical expertise, while access has been limited to consortium institutions with EHR infrastructure. This creates a barrier for researchers who could benefit from CLIF's standardized format but lack institutional resources. MIMIC-IV-Ext-CLIF closes this gap by providing a freely accessible CLIF-formatted dataset from MIMIC-IV \[2\], opening up CLIF access to researchers without institutional EHR access, who can now develop code against the MIMIC-IV-Ext-CLIF dataset and scale their studies across the CLIF consortium.
+However, CLIF implementation requires substantial data science and clinical expertise, while access has been limited to consortium institutions with EHR infrastructure. This creates a barrier for researchers who could benefit from CLIF's standardized format but lack institutional resources. MIMIC-IV-Ext-CLIF closes this gap by providing a freely accessible CLIF-formatted dataset from MIMIC-IV [2], opening up CLIF access to researchers without institutional EHR access, who can now develop code against the MIMIC-IV-Ext-CLIF dataset and scale their studies across the CLIF consortium.
 
 # Methods
 
@@ -42,7 +42,7 @@ To systematically evaluate candidates, we developed utility functions that autom
 
 ## (2) Map
 
-Candidate MIMIC data elements, along with their statistical summaries, are comprehensively documented in a user-friendly spreadsheet \[9\] where they are reviewed and mapped to CLIF mCIDE categories by a group of one to three expert physician-scientists and one to two data scientists. In most cases, a common decision label is assigned to each MIMIC `item` or data element reviewed:
+Candidate MIMIC data elements, along with their statistical summaries, are comprehensively documented in a user-friendly spreadsheet [9] where they are reviewed and mapped to CLIF mCIDE categories by a group of one to three expert physician-scientists and one to two data scientists. In most cases, a common decision label is assigned to each MIMIC item or data element reviewed:
 
 - TO MAP, AS IS: Direct mapping to CLIF category without transformation  
     
@@ -62,13 +62,13 @@ For each mapping, we preserve both the MIMIC-specific terminology (in `*_name` f
 
 ## (3) Program
 
-Mapping decisions documented in the spreadsheet are implemented as modular Python scripts using modern data engineering frameworks. Each CLIF table is built using the Hamilton DAG pattern \[14\] to ensure modularity, testability, and reproducibility. The pipeline uses exported CSV copies of the mapping spreadsheet as the "source of truth," avoiding error-prone hard-coding. When a mapping decision changes (e.g., updating "TO MAP, AS IS" to "NO MAPPING"), re-running the pipeline automatically incorporates the change without code modification. The ETL pipeline is implemented in the CLIF-MIMIC GitHub repository \[3\] and is publicly available for review and reuse.
+Mapping decisions documented in the spreadsheet are implemented as modular Python scripts using modern data engineering frameworks. Each CLIF table is built using the Hamilton DAG pattern [14] to ensure modularity, testability, and reproducibility. The pipeline uses exported CSV copies of the mapping spreadsheet as the "source of truth," avoiding error-prone hard-coding. When a mapping decision changes (e.g., updating "TO MAP, AS IS" to "NO MAPPING"), re-running the pipeline automatically incorporates the change without code modification. The ETL pipeline is implemented in the CLIF-MIMIC GitHub repository [3] and is publicly available for review and reuse.
 
 ## (4) Validate
 
 Validation occurs at multiple levels to ensure CLIF 2.1.0 compliance and data quality.
 
-The `pandera` framework \[15\] is deployed to validate the schema of each transformed CLIF table, checking for compliance in data types, nullability, and permissible mCIDE categories. These  validations are accompanied by more complex and comprehensive checks using tools in the CLIF ecosystem such as CLIF TableOne \[7\] and CLIF Lighthouse \[8\] against CLIF consortium-wide quality benchmarks.
+The `pandera` framework [15] is deployed to validate the schema of each transformed CLIF table, checking for compliance in data types, nullability, and permissible mCIDE categories. These  validations are accompanied by more complex and comprehensive checks using tools in the CLIF ecosystem such as CLIF TableOne [7] and CLIF Lighthouse [8] against CLIF consortium-wide quality benchmarks.
 
 For complex transformations such as flattening the timestamps in the medication administration tables, unit tests are written to ensure the robustness of the transformation.
 
@@ -76,38 +76,25 @@ For complex transformations such as flattening the timestamps in the medication 
 
 *Content description: Your content (data, software, model) description should describe the resource in detail, outlining how files are structured, file formats, and a description of what the files contain. We also suggest including summary statistics where appropriate (e.g. total number of distinct patients, number of files, types of signals, over what time span was the data collected, etc.).*
 
-The dataset consists of 14 CLIF tables derived from MIMIC-IV v3.1, each stored as a separate Parquet file. For detailed descriptions of each CLIF table, see the CLIF data dictionary \[10\].
+The dataset consists of 14 CLIF tables derived from MIMIC-IV v3.1, each stored as a separate Parquet file. For detailed descriptions of each CLIF table, see the CLIF data dictionary [10].
 
 mimic-iv-ext-clif/  
 ├── README.md
-
-├── clif\_patient.parquet
-
-├── clif\_hospitalization.parquet
-
-├── clif\_adt.parquet
-
-├── clif\_vitals.parquet
-
-├── clif\_labs.parquet
-
-├── clif\_respiratory\_support.parquet
-
-├── clif\_patient\_assessments.parquet
-
-├── clif\_medication\_admin\_continuous.parquet
-
-├── clif\_medication\_admin\_intermittent.parquet
-
-├── clif\_position.parquet
-
-├── clif\_crrt\_therapy.parquet
-
-├── clif\_code\_status.parquet
-
-├── clif\_hospital\_diagnosis.parquet
-
-└── clif\_patient\_procedures.parquet
+├── clif_patient.parquet
+├── clif_hospitalization.parquet
+├── clif_adt.parquet
+├── clif_vitals.parquet
+├── clif_labs.parquet
+├── clif_respiratory_support.parquet
+├── clif_patient_assessments.parquet
+├── clif_patient_assessments_raw_gcs.parquet
+├── clif_medication_admin_continuous.parquet
+├── clif_medication_admin_intermittent.parquet
+├── clif_position.parquet
+├── clif_crrt_therapy.parquet
+├── clif_code_status.parquet
+├── clif_hospital_diagnosis.parquet
+└── clif_patient_procedures.parquet
 
 # Usage Notes
 
@@ -119,11 +106,11 @@ mimic-iv-ext-clif/
 
 As an open-access implementation of the CLIF format, this dataset offers substantial reuse potential for researchers both within or outside the CLIF consortium. For researchers already with CLIF-formatted institutional data, this dataset can serve as a validation dataset for code development and project prototyping. For researchers currently building their CLIF ETL pipelines, this dataset can serve as a reference implementation in orchestrating certain CLIF-specific transformations. For researchers without CLIF-formatted institutional data, this dataset provides a low-barrier entry point to the CLIF format whereby code developed against this dataset can be scaled across the entire CLIF consortium, and any researcher can reproduce findings from any CLIF consortium studies using this open-access implementation.
 
-This dataset has already been used in CLIF projects examining the heterogeneity of adherence to lung-protective ventilation \[4\], rates and outcomes associated with ICU readmission \[5\], identifying early opportunities for mobilization in patients on mechanical ventilation \[6\], and validation of machine learning models to predict short-term risk of ventilator-associated pneumonia \[16\]. Each project has its own associated code repository.
+This dataset has already been used in CLIF projects examining the heterogeneity of adherence to lung-protective ventilation [4], rates and outcomes associated with ICU readmission [5], identifying early opportunities for mobilization in patients on mechanical ventilation [6], and validation of machine learning models to predict short-term risk of ventilator-associated pneumonia [16]. Each project has its own associated code repository.
 
 ### Known issues or limitations
 
-The following are select issues and mapping considerations in the current release. For a comprehensive listing of all issues encountered and decisions made when mapping MIMIC-IV to CLIF, see the ISSUESLOG \[12\].
+The following are select issues and mapping considerations in the current release. For a comprehensive listing of all issues encountered and decisions made when mapping MIMIC-IV to CLIF, see the ISSUESLOG [12].
 
 **Race and ethnicity mapping.** In MIMIC-IV, race and ethnicity are documented per encounter and may vary across encounters for the same patient. To assign a unique value in CLIF's `patient` table, we select the highest-frequency informative value (excluding "Unknown" and "Other"), breaking ties by recency.
 
@@ -133,19 +120,21 @@ The following are select issues and mapping considerations in the current releas
 
 ### Complementary resources
 
-- MIMIC-IV-Ext-CLIF ETL pipeline GitHub repository \[3\]
+- MIMIC-IV-Ext-CLIF ETL pipeline GitHub repository [3]
 
-- MIMIC-to-CLIF mapping spreadsheet \[9\]
+- MIMIC-to-CLIF mapping spreadsheet [9]
 
-- CLIF data dictionary \[10\]
+- CLIF data dictionary [10]
 
-- CLIF website \[11\]
+- CLIF website [11]
 
 # Release Notes
 
 *Important notes about the current release, and changes from previous versions.*
 
-For earlier releases, see the detailed release notes in the CHANGELOG \[13\] of this project's GitHub repository.
+For earlier releases, see the detailed release notes in the CHANGELOG [13] of this project's GitHub repository.
+
+In the event of a lag between syncing the most up-to-date release onto here, please always refer to the CHANGELOG [13] of this project's GitHub repository for the most up-to-date releases as well as past releases.
 
 | MIMIC version | CLIF version | Latest CLIF-MIMIC release | Status |
 |-----------------|-----------------|-------------------|---------------------|
@@ -153,7 +142,7 @@ For earlier releases, see the detailed release notes in the CHANGELOG \[13\] of 
 | IV-3.1 | 2.0.0 | v0.1.0 | ✅ stable |
 
 
-## \[v1.1.0\] - 2026-02-13
+## [v1.1.0] - 2026-02-13
 
 ### Readme
 
@@ -163,7 +152,7 @@ Tables updated: `labs`, `patient_assessments`.
 
 -   improve `lab_category` coverage in the `labs` table by adding `basophils_percent`, `basophils_absolute`, `lymphocytes_absolute`, `eosinophils_absolute`, `neutrophils_absolute`, `monocytes_absolute` and expanding capture of `wbc`.
 
--   add `patient_assessments_raw_gcs` supplemental table with non-imputed GCS scores taken directly from chartevents. See ISSUESLOG \[12\] for details on the difference from the imputed GCS in `patient_assessments`.
+-   add `patient_assessments_raw_gcs` supplemental table with non-imputed GCS scores taken directly from chartevents. See ISSUESLOG [12] for details on the difference from the imputed GCS in `patient_assessments`.
 
 
 
@@ -191,19 +180,19 @@ MIMIC-IV-Ext-CLIF is derived from MIMIC-IV and is covered by the same IRB.
 
 # References
 
-1. Rojas JC, Lyons PG, Chhikara K, Chaudhari V, Bhavani SV, Nour M, et al. A common longitudinal intensive care unit data format (CLIF) for critical illness research. Intensive Care Med \[Internet\]. 2025 Mar 1 \[cited 2025 Nov 11\];51(3):556–69. Available from: [https://doi.org/10.1007/s00134-025-07848-7](https://doi.org/10.1007/s00134-025-07848-7)  
-2. Johnson AEW, Bulgarelli L, Shen L, Gayles A, Shammout A, Horng S, et al. MIMIC-IV, a freely accessible electronic health record dataset. Sci Data \[Internet\]. 2023 Jan 3 \[cited 2025 Nov 11\];10(1):1. Available from: [https://www.nature.com/articles/s41597-022-01899-x](https://www.nature.com/articles/s41597-022-01899-x)  
-3. Common-Longitudinal-ICU-data-Format/CLIF-MIMIC \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC)  
-4. Ingraham N e., Chhikara K, Eddington C, Ortiz A c., Schmid B, Weissman G e., et al. The Association of Sex and Height With Low-tidal Volume Ventilation in a Multi-center Cohort of Critically Ill Adults. Am J Respir Crit Care Med \[Internet\]. 2025 May \[cited 2025 Nov 11\];211(Abstracts):A7695–A7695. Available from: [https://www.atsjournals.org/doi/abs/10.1164/ajrccm.2025.211.Abstracts.A7695](https://www.atsjournals.org/doi/abs/10.1164/ajrccm.2025.211.Abstracts.A7695)  
-5. Amagai S, Chaudhari V, Chhikara K, Ingraham NE, Hochberg CH, Barker AK, et al. The Epidemiology of ICU Readmissions Across Ten Health Systems. Critical Care Explorations \[Internet\]. 2025 Nov \[cited 2025 Nov 11\];7(11):e1341. Available from: [https://journals.lww.com/ccejournal/fulltext/2025/11000/the\_epidemiology\_of\_icu\_readmissions\_across\_ten.1.aspx](https://journals.lww.com/ccejournal/fulltext/2025/11000/the_epidemiology_of_icu_readmissions_across_ten.1.aspx)  
-6. Patel B k., Chhikara K, Liao Z, Ingraham N e., Eddington C, Jain S, et al. Identifying Windows of Opportunity for Early Mobilization of Mechanically Ventilated Patients: Multi-center Comparative Analysis of Clinical Trial and Consensus Guideline Eligibility Criteria. Am J Respir Crit Care Med \[Internet\]. 2025 May \[cited 2025 Nov 11\];211(Abstracts):A2870–A2870. Available from: [https://www.atsjournals.org/doi/abs/10.1164/ajrccm.2025.211.Abstracts.A2870](https://www.atsjournals.org/doi/abs/10.1164/ajrccm.2025.211.Abstracts.A2870)  
-7. Common-Longitudinal-ICU-data-Format/CLIF-TableOne \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-TableOne](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-TableOne)  
-8. Common-Longitudinal-ICU-data-Format/CLIF-Lighthouse \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-Lighthouse](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-Lighthouse)
-9. MIMIC-to-CLIF mapping spreadsheet \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/](https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/)
-10. CLIF data dictionary \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://clif-icu.com/data-dictionary](https://clif-icu.com/data-dictionary)
-11. CLIF: Common Longitudinal ICU data Format \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://clif-icu.com/](https://clif-icu.com/)
-12. CLIF-MIMIC ISSUESLOG \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/ISSUESLOG.md](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/ISSUESLOG.md)
-13. CLIF-MIMIC CHANGELOG \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/CHANGELOG.md](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/CHANGELOG.md)
+1. Rojas JC, Lyons PG, Chhikara K, Chaudhari V, Bhavani SV, Nour M, et al. A common longitudinal intensive care unit data format (CLIF) for critical illness research. Intensive Care Med [Internet]. 2025 Mar 1 [cited 2025 Nov 11];51(3):556–69. Available from: [https://doi.org/10.1007/s00134-025-07848-7](https://doi.org/10.1007/s00134-025-07848-7)  
+2. Johnson AEW, Bulgarelli L, Shen L, Gayles A, Shammout A, Horng S, et al. MIMIC-IV, a freely accessible electronic health record dataset. Sci Data [Internet]. 2023 Jan 3 [cited 2025 Nov 11];10(1):1. Available from: [https://www.nature.com/articles/s41597-022-01899-x](https://www.nature.com/articles/s41597-022-01899-x)  
+3. Common-Longitudinal-ICU-data-Format/CLIF-MIMIC [Internet]. Common Longitudinal ICU data Format (CLIF); 2025 [cited 2025 Nov 11]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC)  
+4. Ingraham N e., Chhikara K, Eddington C, Ortiz A c., Schmid B, Weissman G e., et al. The Association of Sex and Height With Low-tidal Volume Ventilation in a Multi-center Cohort of Critically Ill Adults. Am J Respir Crit Care Med [Internet]. 2025 May [cited 2025 Nov 11];211(Abstracts):A7695–A7695. Available from: [https://www.atsjournals.org/doi/abs/10.1164/ajrccm.2025.211.Abstracts.A7695](https://www.atsjournals.org/doi/abs/10.1164/ajrccm.2025.211.Abstracts.A7695)  
+5. Amagai S, Chaudhari V, Chhikara K, Ingraham NE, Hochberg CH, Barker AK, et al. The Epidemiology of ICU Readmissions Across Ten Health Systems. Critical Care Explorations [Internet]. 2025 Nov [cited 2025 Nov 11];7(11):e1341. Available from: [https://journals.lww.com/ccejournal/fulltext/2025/11000/the_epidemiology_of_icu_readmissions_across_ten.1.aspx](https://journals.lww.com/ccejournal/fulltext/2025/11000/the_epidemiology_of_icu_readmissions_across_ten.1.aspx)  
+6. Patel B k., Chhikara K, Liao Z, Ingraham N e., Eddington C, Jain S, et al. Identifying Windows of Opportunity for Early Mobilization of Mechanically Ventilated Patients: Multi-center Comparative Analysis of Clinical Trial and Consensus Guideline Eligibility Criteria. Am J Respir Crit Care Med [Internet]. 2025 May [cited 2025 Nov 11];211(Abstracts):A2870–A2870. Available from: [https://www.atsjournals.org/doi/abs/10.1164/ajrccm.2025.211.Abstracts.A2870](https://www.atsjournals.org/doi/abs/10.1164/ajrccm.2025.211.Abstracts.A2870)  
+7. Common-Longitudinal-ICU-data-Format/CLIF-TableOne [Internet]. Common Longitudinal ICU data Format (CLIF); 2025 [cited 2025 Nov 11]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-TableOne](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-TableOne)  
+8. Common-Longitudinal-ICU-data-Format/CLIF-Lighthouse [Internet]. Common Longitudinal ICU data Format (CLIF); 2025 [cited 2025 Nov 11]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-Lighthouse](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-Lighthouse)
+9. MIMIC-to-CLIF mapping spreadsheet [Internet]. Common Longitudinal ICU data Format (CLIF); 2025 [cited 2025 Nov 11]. Available from: [https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/](https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/)
+10. CLIF data dictionary [Internet]. Common Longitudinal ICU data Format (CLIF); 2025 [cited 2025 Nov 11]. Available from: [https://clif-icu.com/data-dictionary](https://clif-icu.com/data-dictionary)
+11. CLIF: Common Longitudinal ICU data Format [Internet]. Common Longitudinal ICU data Format (CLIF); 2025 [cited 2025 Nov 11]. Available from: [https://clif-icu.com/](https://clif-icu.com/)
+12. CLIF-MIMIC ISSUESLOG [Internet]. Common Longitudinal ICU data Format (CLIF); 2025 [cited 2025 Nov 11]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/ISSUESLOG.md](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/ISSUESLOG.md)
+13. CLIF-MIMIC CHANGELOG [Internet]. Common Longitudinal ICU data Format (CLIF); 2025 [cited 2025 Nov 11]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/CHANGELOG.md](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/CHANGELOG.md)
 14. Krawczyk S, Izzy E ben, Quinn D. Hamilton: enabling software engineering best practices for data transformations via generalized dataflow graphs. In: Cappiello C, Geisler S, Vidal ME, editors. 1st International Workshop on Data Ecosystems co-located with 48th International Conference on Very Large Databases (VLDB 2022) [Internet]. 2022. p. 41–50. Available from: https://ceur-ws.org/Vol-3306/paper5.pdf
 15. Bantilan N. pandera: Statistical Data Validation of Pandas Dataframes. In: Agarwal M, Calloway C, Niederhut D, Shupe D, editors. Proceedings of the 19th Python in Science Conference. 2020. p. 116–24. 
 16. Peltekian AK, Liao WT, Guggilla V, Markov N, Senkow K, Liao Z, et al. Developing and externally validating machine learning models to forecast short-term risk of ventilator-associated pneumonia [Internet]. medRxiv; 2026 [cited 2026 Feb 13]. p. 2026.01.28.26344858. Available from: https://www.medrxiv.org/content/10.64898/2026.01.28.26344858v1
