@@ -62,13 +62,13 @@ For each mapping, we preserve both the MIMIC-specific terminology (in `*_name` f
 
 ## (3) Program
 
-Mapping decisions documented in the spreadsheet are implemented as modular Python scripts using modern data engineering frameworks. Each CLIF table is built using the Hamilton DAG pattern to ensure modularity, testability, and reproducibility. The pipeline uses exported CSV copies of the mapping spreadsheet as the "source of truth," avoiding error-prone hard-coding. When a mapping decision changes (e.g., updating "TO MAP, AS IS" to "NO MAPPING"), re-running the pipeline automatically incorporates the change without code modification. The ETL pipeline is implemented in the CLIF-MIMIC GitHub repository \[3\] and is publicly available for review and reuse.
+Mapping decisions documented in the spreadsheet are implemented as modular Python scripts using modern data engineering frameworks. Each CLIF table is built using the Hamilton DAG pattern \[14\] to ensure modularity, testability, and reproducibility. The pipeline uses exported CSV copies of the mapping spreadsheet as the "source of truth," avoiding error-prone hard-coding. When a mapping decision changes (e.g., updating "TO MAP, AS IS" to "NO MAPPING"), re-running the pipeline automatically incorporates the change without code modification. The ETL pipeline is implemented in the CLIF-MIMIC GitHub repository \[3\] and is publicly available for review and reuse.
 
 ## (4) Validate
 
 Validation occurs at multiple levels to ensure CLIF 2.1.0 compliance and data quality.
 
-The `pandera` framework is deployed to validate the schema of each transformed CLIF table, checking for compliance in data types, nullability, and permissible mCIDE categories. These  validations are accompanied by more complex and comprehensive checks using tools in the CLIF ecosystem such as CLIF TableOne \[7\] and CLIF Lighthouse \[8\] against CLIF consortium-wide quality benchmarks.
+The `pandera` framework \[15\] is deployed to validate the schema of each transformed CLIF table, checking for compliance in data types, nullability, and permissible mCIDE categories. These  validations are accompanied by more complex and comprehensive checks using tools in the CLIF ecosystem such as CLIF TableOne \[7\] and CLIF Lighthouse \[8\] against CLIF consortium-wide quality benchmarks.
 
 For complex transformations such as flattening the timestamps in the medication administration tables, unit tests are written to ensure the robustness of the transformation.
 
@@ -127,8 +127,6 @@ The following are select issues and mapping considerations in the current releas
 
 **Race and ethnicity mapping.** In MIMIC-IV, race and ethnicity are documented per encounter and may vary across encounters for the same patient. To assign a unique value in CLIF's `patient` table, we select the highest-frequency informative value (excluding "Unknown" and "Other"), breaking ties by recency.
 
-
-
 **Lab order datetime.** CLIF's `labs` table includes three datetime fields: `lab_order_dttm`, `lab_collect_dttm`, and `lab_result_dttm`. MIMIC-IV's two-timestamp model (`charttime` for specimen acquisition and `storetime` for result availability) does not include a direct analog for order time. To ensure the field is populated for downstream use, `lab_order_dttm` is set to the same `charttime` value used for `lab_collect_dttm`. Users should be aware that these two fields are identical in this derived dataset.
 
 **Medication route mapping.** In MIMIC-IV, medication route information is dispersed across multiple fields (`ordercategoryname`, `secondaryordercategoryname`, `ordercomponenttypedescription`, `ordercategorydescription`, `category`). In most cases, a combination of these fields determines the `med_route_category` in CLIF. In rarer cases, the specific medication is also needed—for example, for the same `ordercategoryname` = '11-Prophylaxis (Non IV)', Heparin Sodium is mapped to intramuscular (`im`) while Pantoprazole is mapped to enteral. Two medications—Insulin-Humalog and Naloxone—are marked only as '05-Med Bolus' and are currently mapped to `iv`, though they can theoretically be administered via IM or inhalation in rare cases.
@@ -150,11 +148,24 @@ The following are select issues and mapping considerations in the current releas
 For the most up-to-date release, see the detailed release notes in the CHANGELOG \[13\] of this project's GitHub repository.
 
 | MIMIC version | CLIF version | Latest CLIF-MIMIC release | Status |
-| :---- | :---- | :---- | :---- |
-| IV-3.1 | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.0.0](#latest-v100---2025-10-27) | 🧩 partial (✅ stable on the already-released tables) |
-| IV-3.1 | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) | ✅ stable |
+|-----------------|-----------------|-------------------|---------------------|
+| IV-3.1 | 2.1.0 | v1.1.0 | 🧩 partial (✅ stable on the already-released tables) |
+| IV-3.1 | 2.0.0 | v0.1.0 | ✅ stable |
 
-TODO: add notes from the latest release v1.1.0 being prepared. 
+
+## \[v1.1.0\] - 2026-02-13
+
+### Readme
+
+Tables updated: `labs`, `patient_assessments`.
+
+### New
+
+-   improve `lab_category` coverage in the `labs` table by adding `basophils_percent`, `basophils_absolute`, `lymphocytes_absolute`, `eosinophils_absolute`, `neutrophils_absolute`, `monocytes_absolute` and expanding capture of `wbc`.
+
+-   add `patient_assessments_raw_gcs` supplemental table with non-imputed GCS scores taken directly from chartevents. See ISSUESLOG \[12\] for details on the difference from the imputed GCS in `patient_assessments`.
+
+
 
 # Acknowledgements
 
@@ -193,6 +204,9 @@ MIMIC-IV-Ext-CLIF is derived from MIMIC-IV and is covered by the same IRB.
 11. CLIF: Common Longitudinal ICU data Format \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://clif-icu.com/](https://clif-icu.com/)
 12. CLIF-MIMIC ISSUESLOG \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/ISSUESLOG.md](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/ISSUESLOG.md)
 13. CLIF-MIMIC CHANGELOG \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/CHANGELOG.md](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/CHANGELOG.md)
+14. Krawczyk S, Izzy E ben, Quinn D. Hamilton: enabling software engineering best practices for data transformations via generalized dataflow graphs. In: Cappiello C, Geisler S, Vidal ME, editors. 1st International Workshop on Data Ecosystems co-located with 48th International Conference on Very Large Databases (VLDB 2022) [Internet]. 2022. p. 41–50. Available from: https://ceur-ws.org/Vol-3306/paper5.pdf
+15. Bantilan N. pandera: Statistical Data Validation of Pandas Dataframes. In: Agarwal M, Calloway C, Niederhut D, Shupe D, editors. Proceedings of the 19th Python in Science Conference. 2020. p. 116–24. 
+
 
 # Example MIMIC-based Submissions
 

@@ -11,7 +11,7 @@
 
 ### Readme
 
-Tables updated: `labs`, `patient_assessments`
+Tables updated: `labs`, `patient_assessments`.
 
 ### New
 
