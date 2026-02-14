@@ -450,7 +450,7 @@ def fetch_mimic_events_by_eventtable(
     if original:
         cols = "*"
     elif table_name == "chartevents":
-        cols = "itemid, label, hadm_id, stay_id, charttime as time, value, valueuom"
+        cols = "itemid, label, hadm_id, stay_id, charttime as time, value, valuenum, valueuom"
     elif table_name == "procedureevents":
         cols = "itemid, label, hadm_id, stay_id, endtime as time, value, valueuom"
     elif table_name == "inputevents":

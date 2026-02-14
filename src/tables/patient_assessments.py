@@ -287,6 +287,88 @@ def cam_fetched(cam_long: pd.DataFrame) -> pd.DataFrame:
     """
     return con.execute(query).fetchdf()
     
+def gcs_raw_fetched() -> pd.DataFrame:
+    """Fetches raw GCS events without imputation."""
+    logger.info("fetching raw GCS data (no imputation)...")
+    raw_gcs_mapper = {
+        '223900': 'gcs_verbal',
+        '223901': 'gcs_motor',
+        '220739': 'gcs_eyes'
+    }
+    raw_gcs_mapper_df = pd.DataFrame(
+        list(raw_gcs_mapper.items()), columns=['itemid', 'assessment_category']
+    )
+    raw_gcs_events = fetch_mimic_events(list(raw_gcs_mapper.keys()))
+    query = """
+    FROM raw_gcs_events e
+    LEFT JOIN raw_gcs_mapper_df m USING (itemid)
+    SELECT
+        -- DuckDB column alias syntax
+        hospitalization_id: e.hadm_id::VARCHAR
+        , recorded_dttm: e.time::TIMESTAMP
+        , assessment_name: e.label
+        , assessment_category: m.assessment_category
+        , assessment_group: 'Neurological'
+        , numerical_value: CASE
+            WHEN e.value = 'No Response-ETT' THEN 0
+            ELSE e.valuenum::FLOAT
+            END
+        , categorical_value: e.value
+        , text_value: NULL
+    """
+    return con.execute(query).fetchdf()
+
+def gcs_raw_total_computed(gcs_raw_fetched: pd.DataFrame) -> pd.DataFrame:
+    """Pivots raw GCS sub-scores to wide, computes total, unions back with sub-scores."""
+    logger.info("computing raw GCS total from sub-scores...")
+    query = """
+    WITH w AS (
+        PIVOT (
+            FROM gcs_raw_fetched
+            SELECT hospitalization_id, recorded_dttm, assessment_category, numerical_value
+        )
+        ON assessment_category
+        USING MAX(numerical_value)
+    )
+    -- gcs_total rows
+    FROM w
+    SELECT
+        hospitalization_id
+        , recorded_dttm
+        , assessment_name: 'COMPUTED FROM SUB-SCORES; NOT ORIGINALLY AVAILABLE IN MIMIC-IV'
+        , assessment_category: 'gcs_total'
+        , assessment_group: 'Neurological'
+        , numerical_value: gcs_eyes + gcs_verbal + gcs_motor
+        , categorical_value: NULL
+        , text_value: NULL
+    WHERE (gcs_eyes + gcs_verbal + gcs_motor) IS NOT NULL
+    UNION ALL
+    -- original sub-score rows
+    FROM gcs_raw_fetched
+    SELECT *
+    """
+    return con.execute(query).fetchdf()
+
+def gcs_raw_cleaned(gcs_raw_total_computed: pd.DataFrame) -> pd.DataFrame:
+    """Cleans and formats raw GCS data for output."""
+    logger.info("cleaning raw GCS data...")
+    df = gcs_raw_total_computed.copy()
+    df["hospitalization_id"] = df["hospitalization_id"].astype("string")
+    df["categorical_value"] = df["categorical_value"].astype("string")
+    df["recorded_dttm"] = pd.to_datetime(df["recorded_dttm"])
+    df["recorded_dttm"] = convert_tz_to_utc(df["recorded_dttm"])
+    return df
+
+@datasaver()
+def save_raw_gcs(gcs_raw_cleaned: pd.DataFrame) -> dict:
+    logger.info("saving raw GCS to rclif...")
+    save_to_rclif(gcs_raw_cleaned, "patient_assessments_raw_gcs")
+    metadata = {
+        "table_name": "patient_assessments_raw_gcs"
+    }
+    logger.info("raw GCS output saved to parquet!")
+    return metadata
+
 def sbt_id_to_category_mapper() -> dict:
     return {
         224717: "sbt_delivery_pass_fail",
@@ -411,7 +493,7 @@ def _main():
         # .with_cache()
         .build()
     )
-    dr.execute(["save"])
+    dr.execute(["save", "save_raw_gcs"])
 
 def _test():
     logger.info("testing all...")

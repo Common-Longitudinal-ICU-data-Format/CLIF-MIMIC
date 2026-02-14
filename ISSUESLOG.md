@@ -36,6 +36,26 @@ In MIMIC-IV, information about the route of medication administration is dispers
 
 ## `patient_assessments` table
 
+### Imputed vs. raw GCS scores
+
+The `patient_assessments` table has included GCS (Glasgow Coma Scale) scores since the initial release. Starting from v1.1.0, a supplemental `patient_assessments_raw_gcs` table is also provided. Both contain the same `assessment_category` values (`gcs_eyes`, `gcs_motor`, `gcs_verbal`, `gcs_total`) and follow the same `patient_assessments` schema. In both versions, only the three sub-scores are available as original charted values in MIMIC-IV; `gcs_total` is not directly charted and is computed.
+
+The `patient_assessments` table contains GCS scores derived from the [official MIMIC-IV GCS concept script](https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/measurement/gcs.sql). This script is reused for reproducibility, so that users and researchers obtain the same GCS data as represented in the original MIMIC-IV derived concepts. The script applies the following before computing `gcs_total`:
+
+-   when a GCS component (motor, verbal, or eyes) is missing at a given charttime, the most recent value within the preceding 6 hours is carried forward
+
+-   when no prior value exists within the lookback window, each component defaults to its best possible score (motor=6, verbal=5, eyes=4)
+
+-   when the verbal response is recorded as "No Response-ETT" (intubated patient), the total GCS is set to 15
+
+The `patient_assessments_raw_gcs` supplemental table contains GCS scores taken directly as charted in MIMIC-IV's `chartevents` table, without the above processing:
+
+-   each component value reflects exactly what was charted at that time, with no lookback or defaults applied
+
+-   `gcs_total` is computed as the sum of the three sub-scores only when all three are simultaneously observed at the exact same timestamp; if any sub-score is missing, no `gcs_total` is provided. The rate of not observing all three sub-scores simultaneously is approximately 1.3%.
+
+-   "No Response-ETT" is mapped to `numerical_value` = 0, with the original text preserved in `categorical_value`
+
 ### `cam_loc`
 
 One of the MIMIC-IV items currently mapped to CLIF's `cam_loc` field is shown to have poor consistency. For a detailed discussion, see [#17](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/17).

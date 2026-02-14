@@ -6,7 +6,7 @@
 [![CLIF 2.1.0](https://img.shields.io/badge/CLIF-2.1.0-green.svg)](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0)
 [![MIMIC-IV 3.1](https://img.shields.io/badge/MIMIC--IV-3.1-orange.svg)](https://physionet.org/content/mimiciv/)
 
-This repository provides an ETL pipeline to transform the [MIMIC-IV](https://mimic.mit.edu/) database into the [Common Longitudinal ICU data Format (CLIF)](https://clif-consortium.github.io/website/). The latest release is v1.0.0 (October 2025) and transforms MIMIC-IV 3.1 into CLIF 2.1.0.
+This repository provides an ETL pipeline to transform the [MIMIC-IV](https://mimic.mit.edu/) database into the [Common Longitudinal ICU data Format (CLIF)](https://clif-consortium.github.io/website/). The latest release is v1.1.0 (February 2026) and transforms MIMIC-IV 3.1 into CLIF 2.1.0.
 
 ## Table of Contents
 
@@ -178,8 +178,9 @@ Generated Parquet files will be in `output/rclif-2.1.0/` (or your custom output 
 | Table | Typical Size |
 |-------|------|
 | `vitals` | ~265 MB |
-| `labs` | ~344 MB |
-| `patient_assessments` | ~137 MB |
+| `labs` | ~457 MB |
+| `patient_assessments` | ~143 MB |
+| `patient_assessments_raw_gcs` | ~54 MB |
 | `medication_admin_continuous` | ~84 MB |
 | `medication_admin_intermittent` | ~48 MB |
 | `adt` | ~33 MB |
@@ -220,7 +221,6 @@ To contribute to this open-source project, feel free to:
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+The ETL source code in this repository is licensed under the [MIT License](LICENSE).
 
-> [!IMPORTANT]
-> The MIMIC-IV dataset is subject to the [PhysioNet Data Use Agreement](https://physionet.org/content/mimiciv/). Users must obtain access through PhysioNet before processing.
+The derived MIMIC-IV-Ext-CLIF dataset is released under the [PhysioNet Credentialed Health Data License 1.5.0](https://physionet.org/about/licenses/physionet-credentialed-health-data-license-150/), consistent with the licensing terms of the parent MIMIC-IV dataset. Access to the dataset requires PhysioNet credentialing and signing of the Data Use Agreement.

@@ -2,16 +2,22 @@
 
 | MIMIC version | CLIF version | Latest CLIF-MIMIC release | Status |
 |-----------------|-----------------|-------------------|---------------------|
-| IV-3.1 | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.0.0](#v100---2025-10-27) | 🧩 partial (✅ stable on the already-released tables) |
+| IV-3.1 | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.1.0](#v110---2026-02-13) | 🧩 partial (✅ stable on the already-released tables) |
 | IV-3.1 | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) | ✅ stable |
 
 
 
-## \[v1.1.0\]
+## \[v1.1.0\] - 2026-02-13
+
+### Readme
+
+Tables updated: `labs`, `patient_assessments`.
 
 ### New
 
--   addition of several `lab_category` in the `labs` table.
+-   improve `lab_category` coverage in the `labs` table by adding `basophils_percent`, `basophils_absolute`, `lymphocytes_absolute`, `eosinophils_absolute`, `neutrophils_absolute`, `monocytes_absolute` and expanding capture of `wbc`.
+
+-   add `patient_assessments_raw_gcs` supplemental table with non-imputed GCS scores taken directly from chartevents. See [ISSUESLOG](ISSUESLOG.md#imputed-vs-raw-gcs-scores) for details on the difference from the imputed GCS in `patient_assessments`.
 
 
 ## \[v1.0.0\] - 2025-10-27
