@@ -145,7 +145,7 @@ The following are select issues and mapping considerations in the current releas
 
 *Important notes about the current release, and changes from previous versions.*
 
-For the most up-to-date release, see the detailed release notes in the CHANGELOG \[13\] of this project's GitHub repository.
+For earlier releases, see the detailed release notes in the CHANGELOG \[13\] of this project's GitHub repository.
 
 | MIMIC version | CLIF version | Latest CLIF-MIMIC release | Status |
 |-----------------|-----------------|-------------------|---------------------|
