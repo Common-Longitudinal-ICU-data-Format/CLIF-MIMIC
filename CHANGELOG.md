@@ -5,7 +5,15 @@
 | IV-3.1 | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.0.0](#latest-v100---2025-10-27) | 🧩 partial (✅ stable on the already-released tables) |
 | IV-3.1 | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) | ✅ stable |
 
-## LATEST! \[v1.0.0\] - 2025-10-27
+## \[v1.1.0\] - 2026-02-13
+
+### Readme
+
+### New
+
+-   add `patient_assessments_raw_gcs` supplemental table with non-imputed GCS scores taken directly from chartevents. See [ISSUESLOG](ISSUESLOG.md#imputed-vs-raw-gcs-scores) for details on the difference from the imputed GCS in `patient_assessments`.
+
+## \[v1.0.0\] - 2025-10-27
 
 ### Readme
 
