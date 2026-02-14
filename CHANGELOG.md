@@ -7,11 +7,15 @@
 
 
 
-## \[v1.1.0\]
+## \[v1.1.0\] - 2026-02-13
+
+### Readme
+
+
 
 ### New
 
--   addition of several `lab_category` in the `labs` table.
+-   improve `lab_category` coverage in the `labs` table by adding `basophils_percent`, `basophils_absolute`, `lymphocytes_absolute`, `eosinophils_absolute`, `neutrophils_absolute`, `monocytes_absolute` and expanding capture of `wbc`.
 
 
 ## \[v1.0.0\] - 2025-10-27
