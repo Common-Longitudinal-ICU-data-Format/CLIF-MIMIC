@@ -119,7 +119,7 @@ mimic-iv-ext-clif/
 
 As an open-access implementation of the CLIF format, this dataset offers substantial reuse potential for researchers both within or outside the CLIF consortium. For researchers already with CLIF-formatted institutional data, this dataset can serve as a validation dataset for code development and project prototyping. For researchers currently building their CLIF ETL pipelines, this dataset can serve as a reference implementation in orchestrating certain CLIF-specific transformations. For researchers without CLIF-formatted institutional data, this dataset provides a low-barrier entry point to the CLIF format whereby code developed against this dataset can be scaled across the entire CLIF consortium, and any researcher can reproduce findings from any CLIF consortium studies using this open-access implementation.
 
-This dataset has already been used in CLIF projects examining the heterogeneity of adherence to lung-protective ventilation \[4\], rates and outcomes associated with ICU readmission \[5\], and identifying early opportunities for mobilization in patients on mechanical ventilation \[6\]. Each project has its own associated code repository.
+This dataset has already been used in CLIF projects examining the heterogeneity of adherence to lung-protective ventilation \[4\], rates and outcomes associated with ICU readmission \[5\], identifying early opportunities for mobilization in patients on mechanical ventilation \[6\], and validation of machine learning models to predict short-term risk of ventilator-associated pneumonia \[16\]. Each project has its own associated code repository.
 
 ### Known issues or limitations
 
@@ -206,6 +206,7 @@ MIMIC-IV-Ext-CLIF is derived from MIMIC-IV and is covered by the same IRB.
 13. CLIF-MIMIC CHANGELOG \[Internet\]. Common Longitudinal ICU data Format (CLIF); 2025 \[cited 2025 Nov 11\]. Available from: [https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/CHANGELOG.md](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/CHANGELOG.md)
 14. Krawczyk S, Izzy E ben, Quinn D. Hamilton: enabling software engineering best practices for data transformations via generalized dataflow graphs. In: Cappiello C, Geisler S, Vidal ME, editors. 1st International Workshop on Data Ecosystems co-located with 48th International Conference on Very Large Databases (VLDB 2022) [Internet]. 2022. p. 41–50. Available from: https://ceur-ws.org/Vol-3306/paper5.pdf
 15. Bantilan N. pandera: Statistical Data Validation of Pandas Dataframes. In: Agarwal M, Calloway C, Niederhut D, Shupe D, editors. Proceedings of the 19th Python in Science Conference. 2020. p. 116–24. 
+16. Peltekian AK, Liao WT, Guggilla V, Markov N, Senkow K, Liao Z, et al. Developing and externally validating machine learning models to forecast short-term risk of ventilator-associated pneumonia [Internet]. medRxiv; 2026 [cited 2026 Feb 13]. p. 2026.01.28.26344858. Available from: https://www.medrxiv.org/content/10.64898/2026.01.28.26344858v1
 
 
 # Example MIMIC-based Submissions
