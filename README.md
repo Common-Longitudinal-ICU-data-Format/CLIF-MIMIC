@@ -220,7 +220,6 @@ To contribute to this open-source project, feel free to:
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+The ETL source code in this repository is licensed under the [MIT License](LICENSE).
 
-> [!IMPORTANT]
-> The MIMIC-IV dataset is subject to the [PhysioNet Data Use Agreement](https://physionet.org/content/mimiciv/). Users must obtain access through PhysioNet before processing.
+The derived MIMIC-IV-Ext-CLIF dataset is released under the [PhysioNet Credentialed Health Data License 1.5.0](https://physionet.org/about/licenses/physionet-credentialed-health-data-license-150/), consistent with the licensing terms of the parent MIMIC-IV dataset. Access to the dataset requires PhysioNet credentialing and signing of the Data Use Agreement.

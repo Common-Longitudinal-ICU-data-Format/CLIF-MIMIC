@@ -125,12 +125,13 @@ This dataset has already been used in CLIF projects examining the heterogeneity 
 
 The following are select issues and mapping considerations in the current release. For a comprehensive listing of all issues encountered and decisions made when mapping MIMIC-IV to CLIF, see the ISSUESLOG \[12\].
 
-**Race and ethnicity mapping.** In MIMIC-IV, race and ethnicity are documented per encounter and may vary across encounters for the same patient. To assign a unique value in CLIF's `patient` table, we select the highest-frequency informative value (excluding "Unknown" and "Other"), breaking ties by recency. 
+**Race and ethnicity mapping.** In MIMIC-IV, race and ethnicity are documented per encounter and may vary across encounters for the same patient. To assign a unique value in CLIF's `patient` table, we select the highest-frequency informative value (excluding "Unknown" and "Other"), breaking ties by recency.
 
-**Lab order datetime.** CLIF's `labs` table includes three datetime fields: `lab_order_dttm`, `lab_collect_dttm`, and `lab_result_dttm`. MIMIC-IV provides only two timestamps (`charttime` for specimen acquisition and `storetime` for result availability), leaving no true order timestamp. To avoid an entirely null field, `lab_order_dttm` is populated with the same `charttime` used for `lab_collect_dttm`. Users should be aware that these two fields are identical in this derived dataset.
 
-**Medication route edge cases.** Route of administration in MIMIC-IV is inferred from multiple order-category fields and, when ambiguous, from the specific medication. Two medications—Insulin-Humalog and Naloxone—have ambiguous route categorization: they are currently mapped to intravenous (`iv`) but could theoretically be administered intramuscularly or via inhalation in rare cases.
 
+**Lab order datetime.** CLIF's `labs` table includes three datetime fields: `lab_order_dttm`, `lab_collect_dttm`, and `lab_result_dttm`. MIMIC-IV's two-timestamp model (`charttime` for specimen acquisition and `storetime` for result availability) does not include a direct analog for order time. To ensure the field is populated for downstream use, `lab_order_dttm` is set to the same `charttime` value used for `lab_collect_dttm`. Users should be aware that these two fields are identical in this derived dataset.
+
+**Medication route mapping.** In MIMIC-IV, medication route information is dispersed across multiple fields (`ordercategoryname`, `secondaryordercategoryname`, `ordercomponenttypedescription`, `ordercategorydescription`, `category`). In most cases, a combination of these fields determines the `med_route_category` in CLIF. In rarer cases, the specific medication is also needed—for example, for the same `ordercategoryname` = '11-Prophylaxis (Non IV)', Heparin Sodium is mapped to intramuscular (`im`) while Pantoprazole is mapped to enteral. Two medications—Insulin-Humalog and Naloxone—are marked only as '05-Med Bolus' and are currently mapped to `iv`, though they can theoretically be administered via IM or inhalation in rare cases.
 
 ### Complementary resources
 
