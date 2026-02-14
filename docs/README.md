@@ -23,6 +23,7 @@ mimic-iv-ext-clif/
 ├── clif_code_status.parquet
 ├── clif_hospital_diagnosis.parquet
 └── clif_patient_procedures.parquet
+└── clif_patient_assessments_raw_gcs.parquet
 ```
 
 ## Resources
@@ -36,4 +37,6 @@ mimic-iv-ext-clif/
 
 ## License
 
-This derived dataset is licensed under the MIT License. The source MIMIC-IV dataset is subject to the [PhysioNet Data Use Agreement](https://physionet.org/content/mimiciv/view-dua/3.1/).
+This derived dataset is released under the [PhysioNet Credentialed Health Data License 1.5.0](https://physionet.org/about/licenses/physionet-credentialed-health-data-license-150/), consistent with the licensing terms of the parent MIMIC-IV dataset. Access requires PhysioNet credentialing and signing of the Data Use Agreement.
+
+The ETL source code is separately licensed under the [MIT License](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/blob/main/LICENSE).
