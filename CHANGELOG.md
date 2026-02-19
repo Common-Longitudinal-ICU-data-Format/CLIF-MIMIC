@@ -15,7 +15,7 @@ Tables updated: `labs`, `patient_assessments`.
 
 ### New
 
--   improve `lab_category` coverage in the `labs` table by adding `basophils_percent`, `basophils_absolute`, `lymphocytes_absolute`, `eosinophils_absolute`, `neutrophils_absolute`, `monocytes_absolute` and expanding capture of `wbc`.
+-   improve `lab_category` coverage in the `labs` table by adding `lymphocytes_absolute`, `eosinophils_absolute`, `neutrophils_absolute`, `monocytes_absolute` and expanding capture of `wbc`.
 
 -   add `patient_assessments_raw_gcs` supplemental table with non-imputed GCS scores taken directly from chartevents. See [ISSUESLOG](ISSUESLOG.md#imputed-vs-raw-gcs-scores) for details on the difference from the imputed GCS in `patient_assessments`.
 
