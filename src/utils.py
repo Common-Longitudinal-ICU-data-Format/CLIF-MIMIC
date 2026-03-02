@@ -691,6 +691,34 @@ def generate_item_stats_by_eventtable(item_ids: list[int], table_name: str):
         WHERE i.itemid IN ({item_ids_str})
         GROUP BY i.itemid, i.label, i.abbreviation, i.linksto, i.category, i.unitname, i.param_type;
         """
+    elif table_name == "outputevents":
+        query = f"""
+        SELECT
+            i.itemid,
+            i.label,
+            i.abbreviation,
+            i.linksto,
+            i.category,
+            i.unitname,
+            i.param_type,
+            COUNT(*) AS count,
+            CONCAT(
+                'Min: ', ROUND(MIN(e.value), 2), ', Median: ', ROUND(MEDIAN(e.value), 2), ', Max: ', ROUND(MAX(e.value), 2)
+            ) AS value_instances,
+            (SELECT STRING_AGG(
+                    CONCAT(valueuom, ': ', valueuom_count), ', '
+                    ORDER BY valueuom_count DESC)
+                FROM (
+                    SELECT valueuom, COUNT(*) AS valueuom_count
+                    FROM '{table_path}' AS e
+                    WHERE e.itemid = i.itemid AND valueuom IS NOT NULL AND valueuom <> ''
+                    GROUP BY valueuom
+                ) AS valueuom_counts) as valueuom_instances
+        FROM '{d_items_path}' AS i
+            LEFT JOIN '{table_path}' AS e USING (itemid)
+        WHERE i.itemid IN ({item_ids_str})
+        GROUP BY i.itemid, i.label, i.abbreviation, i.linksto, i.category, i.unitname, i.param_type;
+        """
     else:
         raise NotImplementedError(f"Event table '{table_name}' not yet supported.")
     df = con.execute(query).fetchdf()
