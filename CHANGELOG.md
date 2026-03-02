@@ -6,6 +6,16 @@
 | IV-3.1 | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) | ✅ stable |
 
 
+## \[v1.2.0\] - 2026-03
+
+### Readme
+
+Tables updated: `crrt_therapy`.
+
+### Fixed
+
+-   update `blood_flow_rate` in the `crrt_therapy` table to retain the original mL/min unit in line with the updated data dictionary 
+
 
 ## \[v1.1.0\] - 2026-02-13
 
