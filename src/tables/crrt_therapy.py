@@ -77,7 +77,7 @@ def crrt_events_pivoted_wider(extracted_crrt_events: pd.DataFrame) -> pd.DataFra
 def crrt_events_cast_and_cleaned(crrt_events_pivoted_wider: pd.DataFrame) -> pd.DataFrame:
     """
     - cast to correct dtypes
-    - convert blood_flow_rate from mL/min to mL/hr
+    - keep blood_flow_rate in mL/min 
     - convert recorded_dttm to UTC
     """
     logger.info("casting and cleaning...")
@@ -89,7 +89,7 @@ def crrt_events_cast_and_cleaned(crrt_events_pivoted_wider: pd.DataFrame) -> pd.
         CAST(crrt_mode_name as VARCHAR) as crrt_mode_name,
         CAST(lower(crrt_mode_name) as VARCHAR) as crrt_mode_category,
         CAST(NULL as VARCHAR) as dialysis_machine_name,
-        CAST(blood_flow_rate as FLOAT) * 60 as blood_flow_rate, -- convert from mL/min to mL/hr
+        CAST(blood_flow_rate as FLOAT) as blood_flow_rate, -- keep unit in mL/min
         CAST(pre_filter_replacement_fluid_rate as FLOAT) as pre_filter_replacement_fluid_rate,
         CAST(post_filter_replacement_fluid_rate as FLOAT) as post_filter_replacement_fluid_rate,
         CAST(dialysate_flow_rate as FLOAT) as dialysate_flow_rate,
