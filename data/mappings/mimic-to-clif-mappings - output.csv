@@ -1,0 +1,13 @@
+itemid,label,output_category,output_group,decision,status,reviewer,note,count,value_instances,valueuom_instances
+226559,Foley,indwelling_urinary_catheter,urine,TO MAP,validated,SG,,3599702,"Min: -3765.0, Median: 80.0, Max: 30331.0",mL: 3599702
+226560,Void,urethral,urine,TO MAP,validated,SG,,386902,"Min: -1.0, Median: 250.0, Max: 876587.0",mL: 386902
+226561,Condom Cath,external_urinary_catheter,urine,TO MAP,validated,SG,,83164,"Min: -9.0, Median: 210.0, Max: 5000.0",mL: 83164
+226584,Ileoconduit,urostomy,urine,TO MAP,validated,SG,,8906,"Min: 0.0, Median: 100.0, Max: 2500.0",mL: 8906
+226563,Suprapubic,suprapubic_catheter,urine,TO MAP,validated,SG,,13567,"Min: 0.0, Median: 100.0, Max: 3200.0",mL: 13567
+226564,R Nephrostomy,nephrostomy,urine,TO MAP,validated,SG,,5911,"Min: 0.0, Median: 120.0, Max: 3500.0",mL: 5911
+226565,L Nephrostomy,nephrostomy,urine,TO MAP,validated,SG,,4992,"Min: 0.0, Median: 112.5, Max: 1200.0",mL: 4992
+226567,Straight Cath,urethral,urine,TO MAP,validated,SG,,27121,"Min: -1.0, Median: 500.0, Max: 3000.0",mL: 27121
+226557,R Ureteral Stent,urinary_other,urine,TO MAP,,,,435,"Min: 0.0, Median: 60.0, Max: 1100.0",mL: 435
+226558,L Ureteral Stent,urinary_other,urine,TO MAP,,,,239,"Min: 0.0, Median: 50.0, Max: 1000.0",mL: 239
+227488,GU Irrigant Volume In,indwelling_urinary_catheter,urine,SPECIAL,validated,SG,,7199,"Min: 0.0, Median: 2900.0, Max: 12000.0",mL: 7199
+227489,GU Irrigant/Urine Volume Out,indwelling_urinary_catheter,urine,SPECIAL,validated,SG,,7201,"Min: 0.0, Median: 2300.0, Max: 12950.0",mL: 7201
