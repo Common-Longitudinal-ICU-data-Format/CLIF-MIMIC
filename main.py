@@ -2,7 +2,7 @@ import logging
 # from tqdm import tqdm
 from src.tables import labs, patient, hospitalization, adt, respiratory_support, vitals, patient_assessments, \
     medication_admin, medication_admin_continuous, medication_admin_intermittent, position, crrt_therapy, \
-    ecmo_mcs, hospital_diagnosis, patient_procedures, code_status
+    ecmo_mcs, hospital_diagnosis, patient_procedures, code_status, input, output
 from src.logging_config import setup_logging, get_logger
 from src.utils import resave_all_mimic_tables_from_csv_to_parquet, \
     resave_select_mimic_tables_from_csv_to_parquet, resave_mimic_table_from_csv_to_parquet, \
