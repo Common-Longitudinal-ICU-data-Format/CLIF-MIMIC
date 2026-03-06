@@ -4,7 +4,7 @@ __generated_with = "0.20.2"
 app = marimo.App(width="columns", sql_output="pandas")
 
 
-@app.cell
+@app.cell(column=0)
 def _():
     import os
     os.getcwd()
@@ -51,11 +51,12 @@ def _():
     return
 
 
-@app.cell
-def _(pd):
-    pt_demo = pd.read_parquet('tests/clif_patient.parquet')
-    hosp_demo = pd.read_parquet('tests/clif_hospitalization.parquet')
-    return (hosp_demo,)
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # Query
+    """)
+    return
 
 
 @app.cell
@@ -99,20 +100,10 @@ def _(stents):
     return
 
 
-@app.cell
-def _():
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Urine Output Item Mapping
-
-    Loaded from `data/mappings/mimic-to-clif-mappings - output.csv`.
-
-    - `TO MAP`: include in CLIF output table
-    - `SPECIAL`: item 227488 (GU Irrigant Volume In) — input fluid, needed for net UO exploration
+    # ETL
     """)
     return
 
@@ -125,85 +116,54 @@ def _(load_mapping_csv):
 
 
 @app.cell
-def _(output_mapping):
-    mapping_to_map = output_mapping[output_mapping["decision"] == "TO MAP"]
-    mapped_item_ids = mapping_to_map["itemid"].tolist()
-    all_item_ids = output_mapping["itemid"].tolist()
-    return all_item_ids, mapped_item_ids, mapping_to_map
+def _(load_mapping_csv):
+    input_mapping = load_mapping_csv("input")
+    input_mapping
+    return (input_mapping,)
+
+
+@app.cell
+def _(input_mapping, output_mapping):
+    output_mapping_to_map = output_mapping[output_mapping["decision"] == "TO MAP"]
+    output_mapped_item_ids = output_mapping_to_map["itemid"].tolist()
+
+    input_mapping_to_map = input_mapping[input_mapping["decision"] == "TO MAP"]
+    input_mapped_item_ids = input_mapping_to_map["itemid"].tolist()
+
+    # combine all item IDs for raw data loading (both come from MIMIC outputevents)
+    all_item_ids = output_mapping["itemid"].tolist() + input_mapping["itemid"].tolist()
+    return (
+        all_item_ids,
+        input_mapped_item_ids,
+        input_mapping_to_map,
+        output_mapped_item_ids,
+        output_mapping_to_map,
+    )
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Load Raw Output Events
-    """)
-    return
-
-
-@app.cell
-def _(all_item_ids, mimic_table_pathfinder, mo):
-    _item_ids_str = ','.join(map(str, all_item_ids))
-    raw_output = mo.sql(
-        f"""
-        -- Load all urine output events (including GU irrigant) from MIMIC outputevents
-        FROM '{mimic_table_pathfinder("outputevents")}' oe
-        LEFT JOIN '{mimic_table_pathfinder("d_items")}' d USING (itemid)
-        SELECT oe.hadm_id
-            , oe.stay_id
-            , oe.charttime
-            , oe.itemid
-            , d.label
-            , oe.value
-            , oe.valueuom
-        WHERE oe.itemid IN ({_item_ids_str})
-        """
-    )
-    return (raw_output,)
-
-
-@app.cell
-def _(mo, raw_output):
-    _df = mo.sql(
-        f"""
-        -- Summary stats by item
-        FROM raw_output
-        SELECT itemid
-            , label
-            , n: COUNT(*)
-            , n_null_value: COUNT(*) - COUNT(value)
-            , n_negative: COUNT(CASE WHEN value < 0 THEN 1 END)
-            , n_zero: COUNT(CASE WHEN value = 0 THEN 1 END)
-            , min_val: ROUND(MIN(value), 2)
-            , median_val: ROUND(MEDIAN(value), 2)
-            , max_val: ROUND(MAX(value), 2)
-        GROUP BY itemid, label
-        ORDER BY n DESC
-        """
-    )
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Transform to CLIF Output Schema
+    ## Output
 
     Target columns: `hospitalization_id`, `recorded_dttm`, `output_name`, `output_category`, `output_group`, `output_volume`
-
-    This transform uses only `TO MAP` items (excludes the SPECIAL GU irrigant input).
-    Negative and zero volumes are filtered out per CLIF schema requirement.
     """)
     return
 
 
 @app.cell
-def _(mapped_item_ids, mapping_to_map, mimic_table_pathfinder, mo):
-    _item_ids_str = ','.join(map(str, mapped_item_ids))
+def _(
+    mimic_table_pathfinder,
+    mo,
+    output_mapped_item_ids,
+    output_mapping_to_map,
+):
+    _item_ids_str = ','.join(map(str, output_mapped_item_ids))
     clif_output_raw = mo.sql(
         f"""
         -- Transform MIMIC outputevents to CLIF output schema (urine scope)
         FROM '{mimic_table_pathfinder("outputevents")}' oe
-        INNER JOIN mapping_to_map m ON oe.itemid = m.itemid
+        INNER JOIN output_mapping_to_map m ON oe.itemid = m.itemid
         SELECT
             hospitalization_id: CAST(oe.hadm_id AS VARCHAR)
             , recorded_dttm: CAST(oe.charttime AS TIMESTAMP)
@@ -214,7 +174,6 @@ def _(mapped_item_ids, mapping_to_map, mimic_table_pathfinder, mo):
         WHERE oe.itemid IN ({_item_ids_str})
             AND oe.hadm_id IS NOT NULL
             AND oe.value IS NOT NULL
-            AND oe.value > 0
         """
     )
     return (clif_output_raw,)
@@ -233,11 +192,216 @@ def _(clif_output_raw, convert_tz_to_utc, pd):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Net Urine Output Exploration
+    ## Input
+
+    Target columns: `hospitalization_id`, `recorded_dttm`, `input_name`, `input_category`, `input_group`, `input_volume`
+
+    Currently scoped to GU Irrigant Volume In (flush/irrigation for urine).
+    """)
+    return
+
+
+@app.cell
+def _(input_mapped_item_ids, input_mapping_to_map, mimic_table_pathfinder, mo):
+    _item_ids_str = ','.join(map(str, input_mapped_item_ids))
+    clif_input_raw = mo.sql(
+        f"""
+        -- Transform MIMIC outputevents to CLIF input schema (GU irrigant scope)
+        -- NOTE: 227488 lives in MIMIC outputevents but is conceptually an input (fluid into bladder)
+        FROM '{mimic_table_pathfinder("outputevents")}' oe
+        INNER JOIN input_mapping_to_map m ON oe.itemid = m.itemid
+        SELECT
+            hospitalization_id: CAST(oe.hadm_id AS VARCHAR)
+            , recorded_dttm: CAST(oe.charttime AS TIMESTAMP)
+            , input_name: m.label
+            , input_category: m.input_category
+            , input_group: m.input_group
+            , input_volume: CAST(oe.value AS FLOAT)
+        WHERE oe.itemid IN ({_item_ids_str})
+            AND oe.hadm_id IS NOT NULL
+            AND oe.value IS NOT NULL
+        """
+    )
+    return (clif_input_raw,)
+
+
+@app.cell
+def _(clif_input_raw, convert_tz_to_utc, pd):
+    clif_input_utc = clif_input_raw
+    clif_input_utc["recorded_dttm"] = convert_tz_to_utc(
+        pd.to_datetime(clif_input_utc["recorded_dttm"])
+    )
+    clif_input_utc
+    return (clif_input_utc,)
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    # QA
+
+    ## Output
+    """)
+    return
+
+
+@app.cell
+def _(clif_output_utc, mo):
+    _df = mo.sql(
+        f"""
+        -- Null check across all columns
+        FROM clif_output_utc
+        SELECT
+            n_total: COUNT(*)
+            , n_null_hosp_id: COUNT(*) - COUNT(hospitalization_id)
+            , n_null_dttm: COUNT(*) - COUNT(recorded_dttm)
+            , n_null_name: COUNT(*) - COUNT(output_name)
+            , n_null_category: COUNT(*) - COUNT(output_category)
+            , n_null_group: COUNT(*) - COUNT(output_group)
+            , n_null_volume: COUNT(*) - COUNT(output_volume)
+        """
+    )
+    return
+
+
+@app.cell
+def _(clif_output_utc, mo):
+    _df = mo.sql(
+        f"""
+        -- Category and name distribution
+        FROM clif_output_utc
+        SELECT output_category
+            , output_name
+            , n: COUNT(*)
+            , avg_volume: ROUND(AVG(output_volume), 1)
+            , median_volume: ROUND(MEDIAN(output_volume), 1)
+        GROUP BY output_category, output_name
+        ORDER BY n DESC
+        """
+    )
+    return
+
+
+@app.cell
+def _(clif_output_utc, mo):
+    _df = mo.sql(
+        f"""
+        -- Volume range check (should all be positive)
+        FROM clif_output_utc
+        SELECT
+            min_vol: MIN(output_volume)
+            , p25_vol: QUANTILE_CONT(output_volume, 0.25)
+            , median_vol: MEDIAN(output_volume)
+            , p75_vol: QUANTILE_CONT(output_volume, 0.75)
+            , p95_vol: QUANTILE_CONT(output_volume, 0.95)
+            , max_vol: MAX(output_volume)
+            , n_negative: COUNT(CASE WHEN output_volume <= 0 THEN 1 END)
+        """
+    )
+    return
+
+
+@app.cell
+def _(clif_output_utc):
+    # Validate against permissible CLIF output categories (urine group)
+    VALID_URINE_CATEGORIES = [
+        "urethral", "external_urinary_catheter", "indwelling_urinary_catheter",
+        "suprapubic_catheter", "nephrostomy", "urostomy", "urinary_other",
+    ]
+    invalid_cats = set(clif_output_utc["output_category"].unique()) - set(VALID_URINE_CATEGORIES)
+    print(f"Invalid categories found: {invalid_cats}" if invalid_cats else "All output_category values are valid!")
+
+    invalid_groups = set(clif_output_utc["output_group"].unique()) - {"urine"}
+    print(f"Invalid groups found: {invalid_groups}" if invalid_groups else "All output_group values are valid!")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Input
+    """)
+    return
+
+
+@app.cell
+def _(clif_input_utc, mo):
+    _df = mo.sql(
+        f"""
+        -- Null check across all input columns
+        FROM clif_input_utc
+        SELECT
+            n_total: COUNT(*)
+            , n_null_hosp_id: COUNT(*) - COUNT(hospitalization_id)
+            , n_null_dttm: COUNT(*) - COUNT(recorded_dttm)
+            , n_null_name: COUNT(*) - COUNT(input_name)
+            , n_null_category: COUNT(*) - COUNT(input_category)
+            , n_null_group: COUNT(*) - COUNT(input_group)
+            , n_null_volume: COUNT(*) - COUNT(input_volume)
+        """
+    )
+    return
+
+
+@app.cell
+def _(clif_input_utc, mo):
+    _df = mo.sql(
+        f"""
+        -- Input category and name distribution
+        FROM clif_input_utc
+        SELECT input_category
+            , input_name
+            , n: COUNT(*)
+            , avg_volume: ROUND(AVG(input_volume), 1)
+            , median_volume: ROUND(MEDIAN(input_volume), 1)
+        GROUP BY input_category, input_name
+        ORDER BY n DESC
+        """
+    )
+    return
+
+
+@app.cell
+def _(clif_input_utc, mo):
+    _df = mo.sql(
+        f"""
+        -- Input volume range check
+        FROM clif_input_utc
+        SELECT
+            min_vol: MIN(input_volume)
+            , p25_vol: QUANTILE_CONT(input_volume, 0.25)
+            , median_vol: MEDIAN(input_volume)
+            , p75_vol: QUANTILE_CONT(input_volume, 0.75)
+            , p95_vol: QUANTILE_CONT(input_volume, 0.95)
+            , max_vol: MAX(input_volume)
+            , n_negative: COUNT(CASE WHEN input_volume <= 0 THEN 1 END)
+        """
+    )
+    return
+
+
+@app.cell
+def _(clif_input_utc, pd):
+    # Validate against permissible CLIF input categories
+    _valid_input_categories = pd.read_csv("data/mcide/clif_input_category.csv")["input_category"].tolist()
+    _invalid_cats = set(clif_input_utc["input_category"].unique()) - set(_valid_input_categories)
+    print(f"Invalid input categories found: {_invalid_cats}" if _invalid_cats else "All input_category values are valid!")
+
+    _valid_input_groups = pd.read_csv("data/mcide/clif_input_category.csv")["input_group"].unique().tolist()
+    _invalid_groups = set(clif_input_utc["input_group"].unique()) - set(_valid_input_groups)
+    print(f"Invalid input groups found: {_invalid_groups}" if _invalid_groups else "All input_group values are valid!")
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Net Urine Output
 
     The MIMIC reference query computes net urine output by:
 
     1. Negating item 227488 (GU Irrigant Volume In) values
+
     2. Summing all values at the same `stay_id` + `charttime`
 
     This gives: `net UO = irrigant/urine volume out - irrigant volume in`
@@ -251,6 +415,12 @@ def _(mo):
     Let's explore how often irrigant items co-occur and what the net values look like.
     """)
     return
+
+
+@app.cell
+def _(all_item_ids, fetch_mimic_events):
+    raw_output = fetch_mimic_events(all_item_ids)
+    return (raw_output,)
 
 
 @app.cell
@@ -416,88 +586,16 @@ def _(mo):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Quality Assurance
+    # Demo
     """)
     return
 
 
 @app.cell
-def _(clif_output_utc, mo):
-    _df = mo.sql(
-        f"""
-        -- Null check across all columns
-        FROM clif_output_utc
-        SELECT
-            n_total: COUNT(*)
-            , n_null_hosp_id: COUNT(*) - COUNT(hospitalization_id)
-            , n_null_dttm: COUNT(*) - COUNT(recorded_dttm)
-            , n_null_name: COUNT(*) - COUNT(output_name)
-            , n_null_category: COUNT(*) - COUNT(output_category)
-            , n_null_group: COUNT(*) - COUNT(output_group)
-            , n_null_volume: COUNT(*) - COUNT(output_volume)
-        """
-    )
-    return
-
-
-@app.cell
-def _(clif_output_utc, mo):
-    _df = mo.sql(
-        f"""
-        -- Category and name distribution
-        FROM clif_output_utc
-        SELECT output_category
-            , output_name
-            , n: COUNT(*)
-            , avg_volume: ROUND(AVG(output_volume), 1)
-            , median_volume: ROUND(MEDIAN(output_volume), 1)
-        GROUP BY output_category, output_name
-        ORDER BY n DESC
-        """
-    )
-    return
-
-
-@app.cell
-def _(clif_output_utc, mo):
-    _df = mo.sql(
-        f"""
-        -- Volume range check (should all be positive)
-        FROM clif_output_utc
-        SELECT
-            min_vol: MIN(output_volume)
-            , p25_vol: QUANTILE_CONT(output_volume, 0.25)
-            , median_vol: MEDIAN(output_volume)
-            , p75_vol: QUANTILE_CONT(output_volume, 0.75)
-            , p95_vol: QUANTILE_CONT(output_volume, 0.95)
-            , max_vol: MAX(output_volume)
-            , n_negative: COUNT(CASE WHEN output_volume <= 0 THEN 1 END)
-        """
-    )
-    return
-
-
-@app.cell
-def _(clif_output_utc):
-    # Validate against permissible CLIF output categories (urine group)
-    VALID_URINE_CATEGORIES = [
-        "urethral", "external_urinary_catheter", "indwelling_urinary_catheter",
-        "suprapubic_cathether", "nephrostomy", "urostomy", "urinary_other",
-    ]
-    invalid_cats = set(clif_output_utc["output_category"].unique()) - set(VALID_URINE_CATEGORIES)
-    print(f"Invalid categories found: {invalid_cats}" if invalid_cats else "All output_category values are valid!")
-
-    invalid_groups = set(clif_output_utc["output_group"].unique()) - {"urine"}
-    print(f"Invalid groups found: {invalid_groups}" if invalid_groups else "All output_group values are valid!")
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Demo Data Subset
-    """)
-    return
+def _(pd):
+    pt_demo = pd.read_parquet('tests/clif_patient.parquet')
+    hosp_demo = pd.read_parquet('tests/clif_hospitalization.parquet')
+    return (hosp_demo,)
 
 
 @app.cell
@@ -512,22 +610,28 @@ def _(clif_output_utc, hosp_demo, mo):
     return
 
 
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ## Save
-    """)
+@app.cell
+def _(clif_input_utc, hosp_demo, mo):
+    clif_demo_input = mo.sql(
+        f"""
+        FROM clif_input_utc p
+        INNER JOIN hosp_demo d USING (hospitalization_id)
+        SELECT p.*
+        """
+    )
     return
 
 
 @app.cell
 def _():
     # save_to_rclif(df=clif_output_utc, table_name='output')
+    # save_to_rclif(df=clif_input_utc, table_name='input')
     # save_to_rclif(df=clif_demo_output, table_name='demo_output')
+    # save_to_rclif(df=clif_demo_input, table_name='demo_input')
     return
 
 
-@app.cell
+@app.cell(column=1)
 def _():
     return
 
