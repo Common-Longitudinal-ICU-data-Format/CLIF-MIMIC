@@ -11,7 +11,7 @@
 
 ### Readme
 
-- Tables updated: `crrt_therapy`.
+- Tables updated: `crrt_therapy`, `medication_admin_continuous`, `medication_admin_intermittent`.
 - Tables added: `input`, `output`.
 
 ### New
@@ -22,6 +22,8 @@
 ### Fixed
 
 - update `blood_flow_rate` in the `crrt_therapy` table to retain the original mL/min unit in line with the updated data dictionary.
+- update mapping of dextrose to align with the latest mcide version where it is split into 3 `med_category` with no repeats: `dextrose_5_water`, `dextrose_10_water`, `dextrose_other`.
+
 
 ## v1.1.0 - 2026-02-13
 
