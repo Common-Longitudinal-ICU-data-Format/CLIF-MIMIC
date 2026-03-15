@@ -2,7 +2,7 @@ itemid,label,value,n,device_category,mcs_group,ecmo_configuration_category,note,
 229268,Circuit Configuration (ECMO),VV,17950,ecmo_other_unspec,ecmo,v_v,,validated,SG
 229268,Circuit Configuration (ECMO),VA,9926,ecmo_other_unspec,ecmo,v_a,,validated,SG
 229268,Circuit Configuration (ECMO),---,290,ecmo_other_unspec,ecmo,other_unspecified,,validated,SG
-229268,Circuit Configuration (ECMO),VAV,41,ecmo_other_unspec,ecmo,va_v,,validated,SG
+229268,Circuit Configuration (ECMO),VAV,41,ecmo_other_unspec,ecmo,v_av,,validated,SG
 229821,Device (VAD),HeartMate 3,9139,heartmate_3,durable_lvad,NA,,validated,SG
 229821,Device (VAD),HeartWare,1082,heartware,durable_lvad,NA,,validated,SG
 229821,Device (VAD),HeartMate II,52,heartmate_2,durable_lvad,NA,,validated,SG
