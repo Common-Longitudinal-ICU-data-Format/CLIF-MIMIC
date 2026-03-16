@@ -76,5 +76,8 @@ The ICD codes in MIMIC-IV follow the dotless format (i.e. 'N170' rather than 'N1
 
 For the same reason as above, this table is not available.
 
+## `ecmo_mcs` table
 
+- a `_device_context` variable was created during the mapping process to link parameters from the same device in MIMIC. This ensures that e.g. 'Flow (L/min) (HeartWare)' is not confused with 'Flow Rate (Impella)' and assigned to the wrong device. Sometimes the item information in MIMIC does not provide information at the level of granularity as the CLIF `device_category` -- e.g. we cannot infer
+directly from 'Left Ventricular Assit Device Flow' whether it is `durable_lvad` or `temporary_lvad` or `impella_lvad` -- so `_device_context` is created as an intermediate variable to ensure correct parameter and device linkage at the minimum. `_device_context` is preserved in the final output for users' own QA reference.
 

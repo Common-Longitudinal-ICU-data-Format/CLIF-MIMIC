@@ -3,19 +3,20 @@
 
 | MIMIC version | CLIF version                                                        | Latest CLIF-MIMIC release    | Status                                               |
 | ------------- | ------------------------------------------------------------------- | ---------------------------- | ---------------------------------------------------- |
-| IV-3.1        | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.1.0](#v110---2026-02-13) | 🧩 partial (✅ stable on the already-released tables) |
+| IV-3.1        | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.2.0](#v120---2026-03-16) | 🧩 partial (✅ stable on the already-released tables) |
 | IV-3.1        | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) | ✅ stable                                             |
 
 
-## v1.2.0 - 2026-03
+## v1.2.0 - 2026-03-16
 
 ### Readme
 
 - Tables updated: `crrt_therapy`, `medication_admin_continuous`, `medication_admin_intermittent`.
-- Tables added: `input`, `output`.
+- New tmables added: `ecmo_mcs`, `input`, `output`.
 
 ### New
 
+- add initial implementation of the `ecmo_mcs` table in line with the updated schema. Note that a non-CLIF-standard column `_device_context` is preserved for users' own QA reference (see [ISSUESLOG](ISSUESLOG.md#ecmo_mcs-table) for details).
 - add minimal implementation of the new `input` and `output` tables that contain only data elements that enable the calculation of net urine output in support of SOFA-2 related projects.
 - add documentation of miscellaneous known issues around diagnosis codes in MIMIC-IV in the [ISSUESLOG](ISSUESLOG.md).
 
@@ -24,6 +25,9 @@
 - update `blood_flow_rate` in the `crrt_therapy` table to retain the original mL/min unit in line with the updated data dictionary.
 - update mapping of dextrose to align with the latest mcide version where it is split into 3 `med_category` with no repeats: `dextrose_5_water`, `dextrose_10_water`, `dextrose_other`.
 
+### Future
+
+- impute `device_category` and `mcs_group` for rows where they are missing (similar to the respiratory waterfall)
 
 ## v1.1.0 - 2026-02-13
 
