@@ -1,4 +1,7 @@
 itemid,label,value,n,device_category,mcs_group,ecmo_configuration_category,note,status,reviewer
+229840,Circuit Configuration (CH),VA,2548,ecmo_other_unspec,ecmo,v_a,,,zwl
+229840,Circuit Configuration (CH),VV,2360,ecmo_other_unspec,ecmo,v_v,,,zwl
+229840,Circuit Configuration (CH),---,929,ecmo_other_unspec,ecmo,other_unspecified,,,zwl
 229268,Circuit Configuration (ECMO),VV,17950,ecmo_other_unspec,ecmo,v_v,,validated,SG
 229268,Circuit Configuration (ECMO),VA,9926,ecmo_other_unspec,ecmo,v_a,,validated,SG
 229268,Circuit Configuration (ECMO),---,290,ecmo_other_unspec,ecmo,other_unspecified,,validated,SG

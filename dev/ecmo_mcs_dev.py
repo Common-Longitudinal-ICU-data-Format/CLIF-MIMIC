@@ -34,7 +34,14 @@ def _():
         convert_tz_to_utc
     )
 
-    return load_mapping_csv, mimic_table_pathfinder, mo, pd, search_mimic_items
+    return (
+        fetch_mimic_events,
+        load_mapping_csv,
+        mimic_table_pathfinder,
+        mo,
+        pd,
+        search_mimic_items,
+    )
 
 
 @app.cell
@@ -74,6 +81,24 @@ def _(search_mimic_items):
 def _():
     # Sample ECMO events: circuit config, flow, speed, sweep, FiO2
     # ecmo_sample = fetch_mimic_events(item_ids=[229268, 229270, 229277, 229278, 229280])
+    return
+
+
+@app.cell
+def _(fetch_mimic_events):
+    ecmo_ch_events = fetch_mimic_events([229840])
+    return (ecmo_ch_events,)
+
+
+@app.cell
+def _(ecmo_ch_events, mo):
+    _df = mo.sql(
+        f"""
+        FROM ecmo_ch_events
+        SELECT itemid, label, value, n: COUNT(*)
+        GROUP BY ALL
+        """
+    )
     return
 
 
@@ -302,7 +327,7 @@ def _(device_events, measurement_events, mo):
             -- Fallback: when no device event matched, infer device_category from context
             , device_category: -- d.device_category
             COALESCE(d.device_category, CASE
-                WHEN COALESCE(m.device_context, d.device_context) = 'ecmo' THEN 'ecmo_other_unspec'
+                WHEN COALESCE(m.device_context, d.device_context) in ('ecmo_ecmo', 'ecmo_ch') THEN 'ecmo_other_unspec'
             	   WHEN COALESCE(m.device_context, d.device_context) = 'hm2' THEN 'heartmate_2'
                 WHEN COALESCE(m.device_context, d.device_context) = 'rvad' THEN 'rvad_other_unspec'
                 WHEN COALESCE(m.device_context, d.device_context) = 'centrimag_lv' THEN 'centrimag_lv'
@@ -310,21 +335,21 @@ def _(device_events, measurement_events, mo):
                 WHEN COALESCE(m.device_context, d.device_context) = 'heartware' THEN 'heartware'
                 -- WHEN COALESCE(m.device_context, d.device_context) = 'impella_l' THEN 'impella_lv_other_unspec'
                 WHEN COALESCE(m.device_context, d.device_context) = 'impella_r' THEN 'impella_rp'
-    
+
                 -- WHEN COALESCE(m.device_context, d.device_context) = 'iabp' THEN 'iabp'
-    
+
                 END)
             -- Fallback: infer mcs_group from context (e.g., centrimag_lv -> temporary_lvad)
             , mcs_group: -- d.mcs_group
             COALESCE(d.mcs_group, CASE
-                WHEN COALESCE(m.device_context, d.device_context) = 'ecmo' THEN 'ecmo'
+                WHEN COALESCE(m.device_context, d.device_context) in ('ecmo_ecmo', 'ecmo_ch') THEN 'ecmo'
                 WHEN COALESCE(m.device_context, d.device_context) in ('hm2', 'durable_vad', 'heartware') THEN 'durable_lvad' -- there is no durable_rvad
                 WHEN COALESCE(m.device_context, d.device_context) = 'rvad' THEN 'temporary_rvad'
                 WHEN COALESCE(m.device_context, d.device_context) = 'centrimag_lv' THEN 'temporary_lvad'
                 WHEN COALESCE(m.device_context, d.device_context) = 'centrimag_rv' THEN 'temporary_rvad'
                 WHEN COALESCE(m.device_context, d.device_context) = 'impella_l' THEN 'impella_lvad'
                 WHEN COALESCE(m.device_context, d.device_context) = 'impella_r' THEN 'temporary_rvad'
-    
+
                 -- WHEN COALESCE(m.device_context, d.device_context) = 'iabp' THEN 'iabp'
                 END)
             , d.ecmo_configuration_category

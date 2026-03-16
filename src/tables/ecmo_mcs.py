@@ -152,7 +152,7 @@ def clif_ecmo_mcs_raw(
             , d.device_name
             -- Fallback: when no device event matched, infer device_category from context
             , device_category: COALESCE(d.device_category, CASE
-                WHEN COALESCE(m.device_context, d.device_context) = 'ecmo' THEN 'ecmo_other_unspec'
+                WHEN COALESCE(m.device_context, d.device_context) in ('ecmo_ecmo', 'ecmo_ch') THEN 'ecmo_other_unspec'
                 WHEN COALESCE(m.device_context, d.device_context) = 'hm2' THEN 'heartmate_2'
                 WHEN COALESCE(m.device_context, d.device_context) = 'rvad' THEN 'rvad_other_unspec'
                 WHEN COALESCE(m.device_context, d.device_context) = 'centrimag_lv' THEN 'centrimag_lv'
@@ -162,7 +162,7 @@ def clif_ecmo_mcs_raw(
                 END)
             -- Fallback: infer mcs_group from context (e.g., centrimag_lv -> temporary_lvad)
             , mcs_group: COALESCE(d.mcs_group, CASE
-                WHEN COALESCE(m.device_context, d.device_context) = 'ecmo' THEN 'ecmo'
+                WHEN COALESCE(m.device_context, d.device_context) in ('ecmo_ecmo', 'ecmo_ch') THEN 'ecmo'
                 WHEN COALESCE(m.device_context, d.device_context) IN ('hm2', 'durable_vad', 'heartware') THEN 'durable_lvad'
                 WHEN COALESCE(m.device_context, d.device_context) = 'rvad' THEN 'temporary_rvad'
                 WHEN COALESCE(m.device_context, d.device_context) = 'centrimag_lv' THEN 'temporary_lvad'
