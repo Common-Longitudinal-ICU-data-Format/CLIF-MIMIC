@@ -1,10 +1,37 @@
 # Changelog
 
 
-| MIMIC version | CLIF version                                                        | Latest CLIF-MIMIC release    | Status                                               |
-| ------------- | ------------------------------------------------------------------- | ---------------------------- | ---------------------------------------------------- |
-| IV-3.1        | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.2.0](#v120---2026-03-16) | 🧩 partial (✅ stable on the already-released tables) |
-| IV-3.1        | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) | ✅ stable                                             |
+| MIMIC version | CLIF version                                                        | Latest CLIF-MIMIC release    |
+| ------------- | ------------------------------------------------------------------- | ---------------------------- |
+| IV-3.1        | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.2.0](#v120---2026-03-16) |
+| IV-3.1        | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) |
+
+
+### Latest Table Release and Status
+
+The table below shows the latest status of each CLIF table. If you only need specific tables, refer to the "Last Updated in" column to identify the release containing the most up-to-date version. You do not need to rebuild tables whose release version has not changed since your last build.
+
+
+| Table                           | Last Updated in              | Status     | Notes                                                                    |
+| ------------------------------- | ---------------------------- | ---------- | ------------------------------------------------------------------------ |
+| `patient`                       | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `hospitalization`               | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `adt`                           | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `vitals`                        | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `labs`                          | [v1.1.0](#v110---2026-02-13) | ✅ Stable   |                                                                          |
+| `patient_assessments`           | [v1.1.0](#v110---2026-02-13) | ✅ Stable   |                                                                          |
+| `patient_assessments_raw_gcs`   | [v1.1.0](#v110---2026-02-13) | ✅ Stable   | Supplemental table with non-imputed GCS scores                           |
+| `respiratory_support`           | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `medication_admin_continuous`   | [v1.2.0](#v120---2026-03-16) | ✅ Stable   |                                                                          |
+| `medication_admin_intermittent` | [v1.2.0](#v120---2026-03-16) | ✅ Stable   |                                                                          |
+| `position`                      | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `crrt_therapy`                  | [v1.2.0](#v120---2026-03-16) | ✅ Stable   |                                                                          |
+| `ecmo_mcs`                      | [v1.2.0](#v120---2026-03-16) | 🧪 Beta    | Initial implementation; `device_category`/`mcs_group` imputation pending |
+| `hospital_diagnosis`            | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `code_status`                   | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `patient_procedures`            | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `input`                         | [v1.2.0](#v120---2026-03-16) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
+| `output`                        | [v1.2.0](#v120---2026-03-16) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
 
 
 ## v1.2.0 - 2026-03-16
@@ -19,6 +46,7 @@
 - add initial implementation of the `ecmo_mcs` table in line with the updated schema. Note that a non-CLIF-standard column `_device_context` is preserved for users' own QA reference (see [ISSUESLOG](ISSUESLOG.md#ecmo_mcs-table) for details).
 - add minimal implementation of the new `input` and `output` tables that contain only data elements that enable the calculation of net urine output in support of SOFA-2 related projects.
 - add documentation of miscellaneous known issues around diagnosis codes in MIMIC-IV in the [ISSUESLOG](ISSUESLOG.md).
+- add the table above that tracks the latest release and status for each CLIF table.
 
 ### Fixed
 
