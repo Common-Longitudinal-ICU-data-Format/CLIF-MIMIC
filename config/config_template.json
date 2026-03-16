@@ -17,6 +17,7 @@
         "patient_assessments": 0,
         "respiratory_support": 0,
         "medication_admin_continuous": 0,
+        "medication_admin_intermittent": 0,
         "position": 0,
         "crrt_therapy": 1,
         "ecmo_mcs": 1,
