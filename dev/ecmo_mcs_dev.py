@@ -366,6 +366,38 @@ def _(device_events, measurement_events, mo):
     return (clif_ecmo_mcs_raw,)
 
 
+@app.cell
+def _(clif_ecmo_mcs_raw, mo):
+    finals_dups_qa = mo.sql(
+        f"""
+        SELECT 
+            *,
+            STRING_AGG(DISTINCT device_category, '; ' ORDER BY device_category) 
+                OVER w AS _concurrent_device,
+            COUNT(DISTINCT device_category) 
+                OVER w AS _n_concurrent_device
+        FROM clif_ecmo_mcs_raw
+        WINDOW w AS (PARTITION BY hospitalization_id, recorded_dttm)
+        QUALIFY _n_concurrent_device > 1
+        ORDER BY ALL
+        """
+    )
+    return (finals_dups_qa,)
+
+
+@app.cell
+def _(finals_dups_qa, mo):
+    _df = mo.sql(
+        f"""
+        SELECT _concurrent_device, n: COUNT(*)
+        FROM finals_dups_qa
+        GROUP BY all
+        ORDER BY n desc
+        """
+    )
+    return
+
+
 @app.cell(disabled=True)
 def _(clif_ecmo_mcs_raw):
     clif_ecmo_mcs_utc = clif_ecmo_mcs_raw
