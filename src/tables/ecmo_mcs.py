@@ -1,204 +1,200 @@
 # src/tables/ecmo_mcs.py
-import numpy as np
 import pandas as pd
-import logging
 import duckdb
-from hamilton.function_modifiers import tag, datasaver, config, cache, dataloader
+from hamilton.function_modifiers import tag, datasaver
 from src.logging_config import setup_logging, get_logger
 
 logger = get_logger('tables.ecmo_mcs')
 import pandera.pandas as pa
 from pandera.dtypes import Float32
-from typing import Dict, List
 import json
-from importlib import reload
-import src.utils as utils
-# reload(utils)
-from src.utils import construct_mapper_dict, fetch_mimic_events, load_mapping_csv, \
-    get_relevant_item_ids, find_duplicates, rename_and_reorder_cols, save_to_rclif, \
-    convert_and_sort_datetime, item_id_to_label, convert_tz_to_utc
 
-CLIF_ECMO_SCHEMA = pa.DataFrameSchema(
+from src.utils import (
+    load_mapping_csv,
+    save_to_rclif,
+    convert_tz_to_utc,
+    mimic_table_pathfinder,
+)
+
+CLIF_ECMO_MCS_SCHEMA = pa.DataFrameSchema(
     {
-        "hospitalization_id": pa.Column(pa.String, nullable=False),
+        "hospitalization_id": pa.Column(str, nullable=False),
         "recorded_dttm": pa.Column(pd.DatetimeTZDtype(unit="us", tz="UTC"), nullable=False),
-        "device_name": pa.Column(pa.String, nullable=True),
-        "device_category": pa.Column(pa.String, nullable=True),
-        "mcs_group": pa.Column(pa.String, nullable=True), # check whether it should be mcs_group instead
-        # "side": pa.Column(pa.String,  nullable=True, checks=[pa.Check.isin(["left", "right", "both", None])]),
-        "device_metric_name": pa.Column(pa.String, nullable=True),
-        "device_rate": pa.Column(pa.Float32, nullable=True),
-        "flow": pa.Column(pa.Float32, nullable=True),
-        "sweep": pa.Column(pa.Float32, nullable=True),
-        "fdO2": pa.Column(pa.Float32, nullable=True),
+        "_device_context": pa.Column(str, nullable=True),
+        "device_name": pa.Column(str, nullable=True),
+        "device_category": pa.Column(str, nullable=True),
+        "mcs_group": pa.Column(str, nullable=True),
+        "ecmo_configuration_category": pa.Column(str, nullable=True),
+        "control_parameter_name": pa.Column(str, nullable=True),
+        "control_parameter_category": pa.Column(str, nullable=True),
+        "control_parameter_value": pa.Column(Float32, nullable=True),
+        "flow": pa.Column(Float32, nullable=True),
+        "sweep_set": pa.Column(Float32, nullable=True),
+        "fdo2_set": pa.Column(Float32, nullable=True),
     },
     strict=True,
 )
 
+
 def ecmo_mapping() -> pd.DataFrame:
+    logger.info("loading ecmo_mcs mapping...")
     return load_mapping_csv("ecmo_mcs")
 
-def ecmo_mapper(ecmo_mapping: pd.DataFrame) -> dict:
-    ecmo_mapper = construct_mapper_dict(ecmo_mapping, "itemid", "variable")
-    return ecmo_mapper
 
-def ecmo_item_ids(ecmo_mapping: pd.DataFrame) -> pd.Series:
-    # FIXME: this might be off or redundant -- need to check
-    logger.info("parsing the mapping files to identify relevant items and fetch corresponding events...")
-    return get_relevant_item_ids(
-        mapping_df = ecmo_mapping, decision_col = "variable" 
-        ) 
-
-def extracted_ecmo_events(ecmo_item_ids: pd.Series, ecmo_mapper: dict) -> pd.DataFrame:
-    df = fetch_mimic_events(ecmo_item_ids)
-    df["variable"] = df["itemid"].map(ecmo_mapper)
-    df.dropna(subset=['variable'], inplace=True)
-    return df
-
-def duplicates_removed(extracted_ecmo_events: pd.DataFrame) -> pd.DataFrame:
-    '''remove duplicates to prepare for pivoting'''
-    # FIXME: the logic here is clearly off as the find_duplicates is not being used -- need to check
-    ecmo_duplicates: pd.DataFrame = find_duplicates(extracted_ecmo_events)
-    logger.info(f"identified {len(ecmo_duplicates)} 'duplicated' events to be cleaned.")
-    return extracted_ecmo_events.drop_duplicates()
-
-def ecmo_events_cleaned(duplicates_removed: pd.DataFrame) -> pd.DataFrame:
-    df = duplicates_removed
-    # hard coded this because for some reason all the Heartmate devices weren't listed in the "category" column
-    df.loc[df['label'].str.contains('HM II', na=False), 'category'] = 'HM II'
-
-    # hard coding mcs_group based on the labels for different measurements (flow, speed, etc.) - based on Curt's guidance. 
-    # This could probably be converted to a second mcide--I think that is how the respiratory support table does it?
-    df['mcs_group'] = df['label'].apply(
-        lambda x: 'ECMO' if 'ECMO' in x else 
-                'LVAD' if 'LVAD' in x else 
-                'RVAD' if 'RVAD' in x else 
-                'RVAD' if 'Flow Rate (Impella) (R)' in x else
-                'LVAD' if 'Flow Rate (Impella)' in x else 
-                'RVAD' if 'Performance Level (R)' in x else
-                'LVAD' if 'Performance Level' in x else 
-                'LVAD' if 'HM II' in x else 
-                'LVAD' if 'Heartware' in x else 
-                'LVAD' if 'Left Ventricular Assit Device Flow' in x else 
-                'RVAD' if 'Right Ventricular Assist Device Flow' in x else pd.NA
-    )
-    # Fill mcs_group with 'LVAD' where value is '2.5 / CP' and mcs_group is NA - based on Curt's guidance
-    df.loc[
-        (df['value'] == '2.5 / CP') & (df['mcs_group'].isna()),
-        'mcs_group'
-    ] = 'LVAD'
-
-    # Fill mcs_group with 'RVAD' where value is 'RP' and mcs_group is NA - based on Curt's guidance
-    df.loc[
-        (df['value'] == 'RP') & (df['mcs_group'].isna()),
-        'mcs_group'
-    ] = 'RVAD'
-
-    df['device_metric_name'] = df['category'].apply(lambda x: 'Performance Level' if isinstance(x, str) and 'Impella' in x else 'RPM')
-    return df[["hadm_id", "time", 'category', 'mcs_group', 'device_metric_name', "itemid", "value"]]
-
-def pivoted_wider(ecmo_events_cleaned: pd.DataFrame) -> pd.DataFrame:
-    df = ecmo_events_cleaned.pivot(
-        index = ["hadm_id", "time", 'category', 'mcs_group', 'device_metric_name'], 
-        columns = ["itemid"],
-        values = ["value"]
-    ).reset_index()
-    return convert_and_sort_datetime(df)
-
-def coalesced(pivoted_wider: pd.DataFrame) -> pd.DataFrame:
-    df = pivoted_wider
-    df.columns = ['hospitalization_id', 'recorded_dttm', 'device_category', 'mcs_group', 'device_metric_name',
-                             '220125', '220128', '228154', '228156', '228192', '228195', '228198', '228873', 
-                             '228874', '229254', '229255', '229262', '229263', '229268', '229270','229277', '229278','229280', 
-                             '229303', '229304', '229675', '229679', '229823', '229829', '229841', '229842', '229845',
-                             '229846', '230086']
-    
-    # Coalescing the different labels for device rate, flow, sweep, fdO2, and device name based on the device.
-    df["device_rate"] = df[["229262", "229263", "229829", "229845", "229277", "229303", "228874", "228156", "229675", "228195"]].bfill(axis=1).iloc[:, 0]
-    df["flow"] = df[["229254", "229255", "229823", "229842", "229270", "229304", "228873", "220125", "220128", "228154", "228154", "228198"]].bfill(axis=1).iloc[:, 0]
-    df["sweep"] = df[["229278", "229846", "228192"]].bfill(axis=1).iloc[:, 0]
-    df["fdO2"] = df[["229280", "229841", "230086"]].bfill(axis=1).iloc[:, 0]
-    df["device_name"] = df[["229268", "229679"]].bfill(axis=1).iloc[:, 0] 
-    return df
-
-def cleaned(coalesced: pd.DataFrame) -> pd.DataFrame:
-    logger.info("cleaning up column names and data types...")
-    df = coalesced.loc[:, ['hospitalization_id', 'recorded_dttm', 'device_name', 'device_category', 'mcs_group', 'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdO2']]
-    df['flow'] = df['flow'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
-    df['sweep'] = df['sweep'].astype(str).str.extract(r'([\d\.]+)')[0].astype(float)
-
-    # Putting raw strings in the device_name, keeping device_category to defined mcide
-    df.loc[df['device_category'] == 'Hemodynamics', 'device_name'] = 'Hemodynamics'
-    df.loc[df['device_category'] == 'Hemodynamics', 'device_category'] = np.nan
-
-    df.loc[df['device_category'] == 'Durable VAD', 'device_name'] = 'Durable VAD'
-    df.loc[df['device_category'] == 'Durable VAD', 'device_category'] = np.nan
-
-    df.loc[df['device_category'] == 'HM II', 'device_name'] = 'HM II'
-    df.loc[df['device_category'] == 'HM II', 'device_category'] = 'HeartMate'
-
-    df.loc[df['mcs_group'].isna() & (df['device_category'] == 'ECMO'), 'mcs_group'] = 'ECMO'
-    df.loc[df['device_category'].isna(), 'device_category'] = 'Other'
-
-    df = df.drop_duplicates()
-    df.loc[df['device_rate'].isna(), 'device_metric_name'] = pd.NA
-
-    ## NOTE: a possible test here could be crosstabs of device_name and device_category and device_category and mcs_group to make sure everything is mapped correctly
-    return df
-
-def side(cleaned: pd.DataFrame) -> pd.Series:
-    df = cleaned
-    # Define conditions for defining "side"
-    conditions = [
-        df['mcs_group'] == 'LVAD',
-        df['mcs_group'] == 'RVAD',
-        (df['mcs_group'] == 'ECMO') & (df['device_name'] == 'VV'),
-        (df['mcs_group'] == 'ECMO') & (df['device_name'].isin(['VA', 'VAV']))
-    ]
-
-    # Define corresponding values
-    choices = ['left', 'right', 'right', 'both']
-
-    ## NOTE: a possible test here could be crosstabs of mcs_group and side to make sure everything is mapped correctly
-    
-    # Create 'side' column
-    return np.select(conditions, choices, default=None)
+def ecmo_mapping_filtered(ecmo_mapping: pd.DataFrame) -> duckdb.DuckDBPyRelation:
+    """Filter to items with a variable mapping. device_context is provided
+    directly in the mapping CSV (normalizes MIMIC categories so device
+    identification and measurement items share the same grouping key)."""
+    return duckdb.sql("""
+        FROM ecmo_mapping
+        SELECT itemid, variable, label, category, device_context
+        WHERE variable IS NOT NULL AND TRIM(variable) != ''
+    """)
 
 
-def recast(cleaned: pd.DataFrame, side: pd.Series) -> pd.DataFrame:
-    df = cleaned
-    # df['side'] = side
-    # Convert specific columns to string
-    df[['hospitalization_id', 'device_name', 'device_category', 'device_metric_name']] = df[['hospitalization_id', 'device_name', 'device_category', 'device_metric_name']].astype('string')
+def device_lookup() -> duckdb.DuckDBPyRelation:
+    """Lookup table mapping (itemid, charted_value) -> standardized CLIF categories.
+    Only device-identification items (e.g., Circuit Configuration, Type of Catheter)
+    appear here. The CSV stores 'NA' for non-ECMO devices; convert to SQL NULL."""
+    return duckdb.sql("""
+        FROM 'data/mappings/mimic-to-clif-mappings - ecmo_mcs_device.csv'
+        SELECT itemid, label, value, device_category, mcs_group
+            , ecmo_config: NULLIF(ecmo_configuration_category, 'NA')
+    """)
 
-    # Convert specific columns to numeric
-    df[['device_rate', 'flow', 'sweep', 'fdO2']] = df[['device_rate', 'flow', 'sweep', 'fdO2']].apply(pd.to_numeric, errors='coerce', downcast='float')
-    
-    df['recorded_dttm'] = convert_tz_to_utc(df['recorded_dttm'])
-    return df
 
-def outliers_removed(recast: pd.DataFrame) -> pd.DataFrame:
-    # Value cutoffs -- NOTE: should this be here or project specific?
-    df = recast
-    df.loc[~df['sweep'].between(0, 15), 'sweep'] = pd.NA
-    df.loc[~df['flow'].between(0, 10), 'flow'] = pd.NA
-    df.loc[~df['fdO2'].between(0, 100), 'fdO2'] = pd.NA
-    return df
+def all_events(ecmo_mapping_filtered: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
+    """Fetch every chartevent row whose itemid is in the mapping.
+    INNER JOIN filters to only mapped items; device_context comes along
+    so downstream nodes can group by physical device."""
+    _chartevents_path = mimic_table_pathfinder("chartevents")
+    return duckdb.sql(f"""
+        FROM '{_chartevents_path}' ce
+        INNER JOIN ecmo_mapping_filtered m ON ce.itemid = m.itemid
+        SELECT
+            ce.hadm_id, ce.charttime, ce.itemid, ce.value, ce.valuenum
+            , m.variable, m.label, m.device_context
+        WHERE ce.hadm_id IS NOT NULL
+    """)
+
+
+def device_events(
+    all_events: duckdb.DuckDBPyRelation,
+    device_lookup: duckdb.DuckDBPyRelation,
+) -> duckdb.DuckDBPyRelation:
+    """Items where variable = 'device_name' identify WHICH device is in use
+    (e.g., Circuit Configuration -> "VV", Type of Catheter -> "5.5").
+    LEFT JOIN with device_lookup translates the charted text value into
+    standardized device_category, mcs_group, and ecmo_configuration_category."""
+    return duckdb.sql("""
+        FROM all_events ae
+        LEFT JOIN device_lookup dl ON ae.itemid = dl.itemid AND TRIM(ae.value) = TRIM(dl.value)
+        SELECT
+            ae.hadm_id, ae.charttime, ae.device_context
+            , device_name: dl.label || ' = ' || ae.value
+            , device_category: dl.device_category
+            , mcs_group: dl.mcs_group
+            , ecmo_configuration_category: dl.ecmo_config
+        WHERE ae.variable = 'device_name'
+    """)
+
+
+def measurement_events(all_events: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
+    """Pivot all non-device items into wide format: one row per
+    (hadm_id, charttime, device_context) with columns for each measurement.
+    MAX() is safe because at most one item per variable fires per group."""
+    return duckdb.sql(r"""
+        FROM all_events ae
+        SELECT
+            ae.hadm_id, ae.charttime, ae.device_context
+            -- Blood flow in L/min (numeric)
+            , flow: MAX(CASE WHEN ae.variable = 'flow' THEN ae.valuenum END)
+            -- Gas sweep rate: stored as text in MIMIC, extract numeric portion
+            , sweep_set: MAX(CASE WHEN ae.variable = 'sweep_set'
+                THEN TRY_CAST(REGEXP_EXTRACT(ae.value, '[\d\.]+') AS FLOAT) END)
+            -- FiO2: MIMIC stores as % (0-100), divide by 100 -> fraction (0-1)
+            , fdo2_set: MAX(CASE WHEN ae.variable = 'fdo2_set' THEN ae.valuenum / 100.0 END)
+            -- Control parameters: the mapping CSV encodes category after the colon
+            -- e.g., "control_parameter_category:rpm" -> category = "rpm"
+            , control_parameter_name: MAX(CASE WHEN ae.variable LIKE 'control_parameter_category:%' THEN ae.label END)
+            , control_parameter_category: MAX(CASE WHEN ae.variable LIKE 'control_parameter_category:%'
+                THEN SPLIT_PART(ae.variable, ':', 2) END)
+            -- RPM items are numeric; Impella power is text (P0-P9) -> extract digit
+            , control_parameter_value: MAX(CASE
+                WHEN ae.variable = 'control_parameter_category:rpm' THEN ae.valuenum
+                WHEN ae.variable = 'control_parameter_category:impella_power'
+                    THEN TRY_CAST(REGEXP_EXTRACT(ae.value, '\d+') AS FLOAT)
+                END)
+        WHERE ae.variable != 'device_name'
+        GROUP BY 1, 2, 3
+    """)
+
+
+def clif_ecmo_mcs_raw(
+    device_events: duckdb.DuckDBPyRelation,
+    measurement_events: duckdb.DuckDBPyRelation,
+) -> pd.DataFrame:
+    """FULL OUTER JOIN: keeps measurement rows without a device event (common for
+    Centrimag, legacy Hemodynamics items) and device events without measurements.
+    Fallback CASE WHENs provide default device_category/mcs_group inferred from
+    device_context when no device-identification event exists at that timestamp."""
+    logger.info("joining device and measurement events...")
+    return duckdb.sql("""
+        FROM measurement_events m
+        FULL OUTER JOIN device_events d
+            ON m.hadm_id = d.hadm_id
+            AND m.charttime = d.charttime
+            AND m.device_context = d.device_context
+        SELECT
+            hospitalization_id: CAST(COALESCE(m.hadm_id, d.hadm_id) AS VARCHAR)
+            , recorded_dttm: CAST(COALESCE(m.charttime, d.charttime) AS TIMESTAMP)
+            , _device_context: COALESCE(m.device_context, d.device_context)
+            , d.device_name
+            -- Fallback: when no device event matched, infer device_category from context
+            , device_category: COALESCE(d.device_category, CASE
+                WHEN COALESCE(m.device_context, d.device_context) = 'ecmo' THEN 'ecmo_other_unspec'
+                WHEN COALESCE(m.device_context, d.device_context) = 'hm2' THEN 'heartmate_2'
+                WHEN COALESCE(m.device_context, d.device_context) = 'rvad' THEN 'rvad_other_unspec'
+                WHEN COALESCE(m.device_context, d.device_context) = 'centrimag_lv' THEN 'centrimag_lv'
+                WHEN COALESCE(m.device_context, d.device_context) = 'centrimag_rv' THEN 'centrimag_rv'
+                WHEN COALESCE(m.device_context, d.device_context) = 'heartware' THEN 'heartware'
+                WHEN COALESCE(m.device_context, d.device_context) = 'impella_r' THEN 'impella_rp'
+                END)
+            -- Fallback: infer mcs_group from context (e.g., centrimag_lv -> temporary_lvad)
+            , mcs_group: COALESCE(d.mcs_group, CASE
+                WHEN COALESCE(m.device_context, d.device_context) = 'ecmo' THEN 'ecmo'
+                WHEN COALESCE(m.device_context, d.device_context) IN ('hm2', 'durable_vad', 'heartware') THEN 'durable_lvad'
+                WHEN COALESCE(m.device_context, d.device_context) = 'rvad' THEN 'temporary_rvad'
+                WHEN COALESCE(m.device_context, d.device_context) = 'centrimag_lv' THEN 'temporary_lvad'
+                WHEN COALESCE(m.device_context, d.device_context) = 'centrimag_rv' THEN 'temporary_rvad'
+                WHEN COALESCE(m.device_context, d.device_context) = 'impella_l' THEN 'impella_lvad'
+                WHEN COALESCE(m.device_context, d.device_context) = 'impella_r' THEN 'temporary_rvad'
+                END)
+            , d.ecmo_configuration_category
+            , m.control_parameter_name
+            , m.control_parameter_category
+            , m.control_parameter_value
+            , m.flow
+            , m.sweep_set
+            , m.fdo2_set
+        ORDER BY hospitalization_id, recorded_dttm
+    """).df()
+
 
 @tag(property="final")
-def reordered(outliers_removed: pd.DataFrame) -> pd.DataFrame:
-    column_order = [
-        'hospitalization_id', 'recorded_dttm', 'device_name', 'device_category',
-        'mcs_group', # 'side', 
-        'device_metric_name', 'device_rate', 'flow', 'sweep', 'fdO2'
-    ]
-    # Reorder the DataFrame
-    return outliers_removed[column_order]
+def clif_ecmo_mcs(clif_ecmo_mcs_raw: pd.DataFrame) -> pd.DataFrame:
+    """Convert MIMIC US/Eastern timestamps to UTC."""
+    logger.info("converting timestamps to UTC...")
+    df = clif_ecmo_mcs_raw.copy()
+    df["recorded_dttm"] = convert_tz_to_utc(pd.to_datetime(df["recorded_dttm"]))
+    return df
+
 
 @tag(property="test")
-def schema_tested(reordered: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
+def schema_tested(clif_ecmo_mcs: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
+    logger.info("testing schema...")
     try:
-        CLIF_ECMO_SCHEMA.validate(reordered, lazy=True)
+        CLIF_ECMO_MCS_SCHEMA.validate(clif_ecmo_mcs, lazy=True)
         return True
     except pa.errors.SchemaErrors as exc:
         logger.error(json.dumps(exc.message, indent=2))
@@ -208,17 +204,19 @@ def schema_tested(reordered: pd.DataFrame) -> bool | pa.errors.SchemaErrors:
         logger.error(exc.data)
         return exc
 
+
 @datasaver()
-def save(reordered: pd.DataFrame) -> dict:
+def save(clif_ecmo_mcs: pd.DataFrame) -> dict:
     logger.info("saving to rclif...")
-    save_to_rclif(reordered, "ecmo_mcs")
-    
+    save_to_rclif(clif_ecmo_mcs, "ecmo_mcs")
+
     metadata = {
         "table_name": "ecmo_mcs"
     }
-    
+
     logger.info("output saved to a parquet file, everything completed for the ecmo_mcs table!")
     return metadata
+
 
 def _main():
     logger.info("starting to build clif ecmo_mcs table -- ")
@@ -227,10 +225,10 @@ def _main():
     dr = (
         driver.Builder()
         .with_modules(ecmo_mcs)
-        # .with_cache()
         .build()
     )
     dr.execute(["save"])
+
 
 def _test():
     logger.info("testing all...")
@@ -246,6 +244,7 @@ def _test():
     output = dr.execute(test_nodes)
     logger.debug(f"Test output: {output}")
     return output
+
 
 if __name__ == "__main__":
     setup_logging()

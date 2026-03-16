@@ -297,7 +297,8 @@ def _(device_events, measurement_events, mo):
             hospitalization_id: CAST(COALESCE(m.hadm_id, d.hadm_id) AS VARCHAR)
             , recorded_dttm: CAST(COALESCE(m.charttime, d.charttime) AS TIMESTAMP)
             , _device_context: COALESCE(m.device_context, d.device_context)
-            , device_name: COALESCE(d.device_name, _device_context)
+            , d.device_name
+            -- , device_name: COALESCE(, _device_context)
             -- Fallback: when no device event matched, infer device_category from context
             , device_category: -- d.device_category
             COALESCE(d.device_category, CASE
