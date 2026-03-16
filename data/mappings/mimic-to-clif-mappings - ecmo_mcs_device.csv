@@ -2,14 +2,14 @@ itemid,label,value,n,device_category,mcs_group,ecmo_configuration_category,note,
 229268,Circuit Configuration (ECMO),VV,17950,ecmo_other_unspec,ecmo,v_v,,validated,SG
 229268,Circuit Configuration (ECMO),VA,9926,ecmo_other_unspec,ecmo,v_a,,validated,SG
 229268,Circuit Configuration (ECMO),---,290,ecmo_other_unspec,ecmo,other_unspecified,,validated,SG
-229268,Circuit Configuration (ECMO),VAV,41,ecmo_other_unspec,ecmo,v_av,,validated,SG
+229268,Circuit Configuration (ECMO),VAV,41,ecmo_other_unspec,ecmo,va_v,,validated,SG
 229821,Device (VAD),HeartMate 3,9139,heartmate_3,durable_lvad,NA,,validated,SG
 229821,Device (VAD),HeartWare,1082,heartware,durable_lvad,NA,,validated,SG
 229821,Device (VAD),HeartMate II,52,heartmate_2,durable_lvad,NA,,validated,SG
 229679,Type of Catheter (Impella),2.5 / CP,8658,impella_lv_other_unspec,impella_lvad,NA,,validated,SG
 229679,Type of Catheter (Impella),5.5,2709,impella_5_5,impella_lvad,NA,,validated,SG
 229679,Type of Catheter (Impella),5,2649,impella_5_0,impella_lvad,NA,,validated,SG
-229679,Type of Catheter (Impella),RP,1384,impella_RP,temporary_rvad,NA,,validated,SG
+229679,Type of Catheter (Impella),RP,1384,impella_rp,temporary_rvad,NA,,validated,SG
 229679,Type of Catheter (Impella),---,435,impella_lv_other_unspec,impella_lvad,NA,,validated,SG
 228199,Type (Tandem Heart),Right Ventricular Assist/RA,2522,tandemheart_rv,temporary_rvad,NA,Assuming it is not an OxyRVAD and therefore not V-P ECMO,validated,SG
 228199,Type (Tandem Heart),Left Ventricular Assist/LA,834,tandemheart_lv,temporary_lvad,NA,,validated,SG
