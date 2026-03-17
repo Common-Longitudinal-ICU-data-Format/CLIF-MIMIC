@@ -1,0 +1,2 @@
+itemid,label,input_category,input_group,decision,status,reviewer,note,count,value_instances,valueuom_instances
+227488,GU Irrigant Volume In,flush_irrigation_urine,flush_irrigation,TO MAP,validated,SG,,7199,"Min: 0.0, Median: 2900.0, Max: 12000.0",mL: 7199

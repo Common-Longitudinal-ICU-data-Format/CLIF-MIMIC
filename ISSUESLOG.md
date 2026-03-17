@@ -16,22 +16,24 @@ Because patients no longer answer two separate questions, an Asian Hispanic pati
 
 In rarer cases, categories like "South American" which do not fit contemporary U.S. racial and ethnic classification schemas are mapped to uninformative "Other" or "Unknown" categories, since we cannot determine if the patient is of Spanish origin (which would classify them as "Hispanic").
 
-Each of these edge cases accounts for approximately 0.1% of the patient population. See discussion: https://github.com/MIT-LCP/mimic-code/issues/1236
+Each of these edge cases accounts for approximately 0.1% of the patient population. See discussion: [https://github.com/MIT-LCP/mimic-code/issues/1236](https://github.com/MIT-LCP/mimic-code/issues/1236)
 
 ## `hospitalization` table
 
 ### `admission_type_category`
+
 The current mapping to the `admission_type_category` field is known to have questionable congruence and is being actively investigated and subject to change.
 
 ## `labs` table
 
 ### `lab_order_dttm`
-There are three date-time fields in CLIF's `labs` table: `lab_order_dttm`, `lab_collect_dttm`, `lab_result_dttm`. In MIMIC, only two date-time fields are available: [`charttime`](https://mimic.mit.edu/docs/iv/modules/hosp/labevents/#charttime) and [`storetime`](https://mimic.mit.edu/docs/iv/modules/hosp/labevents/#charttime). `charttime` is said to capture "usually the time at which the specimen was acquired" and therefore mapped to `lab_collect_dttm`, while `storetime` is "when the information would have been available to care providers" and therefore mapped to `lab_result_dttm`. This leaves `lab_order_dttm` null which has caused issue in previous projects. Therefore, in the interest of not having an entirely null field, starting from the 1.0.0 release,`lab_order_dttm` is populated with the same [`charttime`](https://mimic.mit.edu/docs/iv/modules/hosp/labevents/#charttime) from MIMIC that was previously mapped to `lab_collect_dttm` only.
 
+There are three date-time fields in CLIF's `labs` table: `lab_order_dttm`, `lab_collect_dttm`, `lab_result_dttm`. In MIMIC, only two date-time fields are available: `[charttime](https://mimic.mit.edu/docs/iv/modules/hosp/labevents/#charttime)` and `[storetime](https://mimic.mit.edu/docs/iv/modules/hosp/labevents/#charttime)`. `charttime` is said to capture "usually the time at which the specimen was acquired" and therefore mapped to `lab_collect_dttm`, while `storetime` is "when the information would have been available to care providers" and therefore mapped to `lab_result_dttm`. This leaves `lab_order_dttm` null which has caused issue in previous projects. Therefore, in the interest of not having an entirely null field, starting from the 1.0.0 release,`lab_order_dttm` is populated with the same `[charttime](https://mimic.mit.edu/docs/iv/modules/hosp/labevents/#charttime)` from MIMIC that was previously mapped to `lab_collect_dttm` only.
 
 ## `medication_admin_*` tables
 
 ### `med_route_category`
+
 In MIMIC-IV, information about the route of medication administration is dispersed across multiple fields: `ordercategoryname`, `secondaryordercategoryname`, `ordercomponenttypedescription`, `ordercategorydescription`, `category`. In [most cases](https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/edit?gid=2143004591#gid=2143004591), a combination of one or more of these fields are enough to determine the `med_route_category` in CLIF. In [rarer cases](https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/edit?gid=1471893996#gid=1471893996) where these are not enough, we also take into account the particular medication. For example, for the same `ordercategoryname` = '11-Prophylaxis (Non IV)', we know 'Heparin Sodium (Prophylaxis)' would have to be administered intramuscularly (`med_route_category` = 'im'), while 'Pantoprazole (Protonix)' would have to be administered enterally (`med_route_category` = 'enteral'). The only 2 exceptions so far are 'Insulin - Humalog' (`itemid = 223262`) and 'Naloxone (Narcan)' (`itemid = 222021`) which are only marked to be `05-Med Bolus` and are currently mapped to `iv` but theorectically they can be administered through IM or inhalation in very rare cases.
 
 ## `patient_assessments` table
@@ -42,21 +44,40 @@ The `patient_assessments` table has included GCS (Glasgow Coma Scale) scores sin
 
 The `patient_assessments` table contains GCS scores derived from the [official MIMIC-IV GCS concept script](https://github.com/MIT-LCP/mimic-code/blob/main/mimic-iv/concepts/measurement/gcs.sql). This script is reused for reproducibility, so that users and researchers obtain the same GCS data as represented in the original MIMIC-IV derived concepts. The script applies the following before computing `gcs_total`:
 
--   when a GCS component (motor, verbal, or eyes) is missing at a given charttime, the most recent value within the preceding 6 hours is carried forward
-
--   when no prior value exists within the lookback window, each component defaults to its best possible score (motor=6, verbal=5, eyes=4)
-
--   when the verbal response is recorded as "No Response-ETT" (intubated patient), the total GCS is set to 15
+- when a GCS component (motor, verbal, or eyes) is missing at a given charttime, the most recent value within the preceding 6 hours is carried forward
+- when no prior value exists within the lookback window, each component defaults to its best possible score (motor=6, verbal=5, eyes=4)
+- when the verbal response is recorded as "No Response-ETT" (intubated patient), the total GCS is set to 15
 
 The `patient_assessments_raw_gcs` supplemental table contains GCS scores taken directly as charted in MIMIC-IV's `chartevents` table, without the above processing:
 
--   each component value reflects exactly what was charted at that time, with no lookback or defaults applied
-
--   `gcs_total` is computed as the sum of the three sub-scores only when all three are simultaneously observed at the exact same timestamp; if any sub-score is missing, no `gcs_total` is provided. The rate of not observing all three sub-scores simultaneously is approximately 1.3%.
-
--   "No Response-ETT" is mapped to `numerical_value` = 0, with the original text preserved in `categorical_value`
+- each component value reflects exactly what was charted at that time, with no lookback or defaults applied
+- `gcs_total` is computed as the sum of the three sub-scores only when all three are simultaneously observed at the exact same timestamp; if any sub-score is missing, no `gcs_total` is provided. The rate of not observing all three sub-scores simultaneously is approximately 1.3%.
+- "No Response-ETT" is mapped to `numerical_value` = 0, with the original text preserved in `categorical_value`
 
 ### `cam_loc`
 
 One of the MIMIC-IV items currently mapped to CLIF's `cam_loc` field is shown to have poor consistency. For a detailed discussion, see [#17](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/17).
+
+## `hospital_diagnosis` table
+
+### `diagnosis_primary`
+
+The `diagnosis_primary` field is sourced from the `seq_num` field in MIMIC-IV's `diagnoses_icd` table. The same [caveat](https://mimic.mit.edu/docs/iv/modules/hosp/diagnoses_icd/#seq_num) in the MIMIC-IV documentation applies.
+
+### `poa_present`
+
+MIMIC-IV only contains un-dated billing diagnoses that do not indicate whether the diagnosis was present on admission or not. Thus, the `poa_present` field is all NULL. See [https://github.com/MIT-LCP/mimic-code/issues/954](https://github.com/MIT-LCP/mimic-code/issues/954) for more details.
+
+### `diagnosis_code`
+
+The ICD codes in MIMIC-IV follow the dotless format (i.e. 'N170' rather than 'N17.0'). This pattern is preserved in CLIF-MIMIC. 
+
+## `patient_diagnosis` table
+
+For the same reason as above, this table is not available.
+
+## `ecmo_mcs` table
+
+- a `_device_context` variable was created during the mapping process to link parameters from the same device in MIMIC. This ensures that e.g. 'Flow (L/min) (HeartWare)' is not confused with 'Flow Rate (Impella)' and assigned to the wrong device. Sometimes the item information in MIMIC does not provide information at the level of granularity as the CLIF `device_category` -- e.g. we cannot infer
+directly from 'Left Ventricular Assit Device Flow' whether it is `durable_lvad` or `temporary_lvad` or `impella_lvad` -- so `_device_context` is created as an intermediate variable to ensure correct parameter and device linkage at the minimum. `_device_context` is preserved in the final output for users' own QA reference.
 
