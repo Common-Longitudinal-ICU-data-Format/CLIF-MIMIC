@@ -1,13 +1,63 @@
 # Changelog
 
-| MIMIC version | CLIF version | Latest CLIF-MIMIC release | Status |
-|-----------------|-----------------|-------------------|---------------------|
-| IV-3.1 | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.1.0](#v110---2026-02-13) | 🧩 partial (✅ stable on the already-released tables) |
-| IV-3.1 | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) | ✅ stable |
+
+| MIMIC version | CLIF version                                                        | Latest CLIF-MIMIC release    |
+| ------------- | ------------------------------------------------------------------- | ---------------------------- |
+| IV-3.1        | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.2.0](#v120---2026-03-16) |
+| IV-3.1        | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) |
 
 
+### Table Release and Status Tracker
 
-## \[v1.1.0\] - 2026-02-13
+The table below shows the latest release and status of each CLIF table. If you only need specific tables, refer to the "Last Updated in" column to identify the release containing the most up-to-date version. You do not need to rebuild tables whose release version has not changed since your last build.
+
+
+| Table                           | Last Updated in              | Status     | Notes                                                                    |
+| ------------------------------- | ---------------------------- | ---------- | ------------------------------------------------------------------------ |
+| `patient`                       | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `hospitalization`               | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `adt`                           | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `vitals`                        | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `labs`                          | [v1.1.0](#v110---2026-02-13) | ✅ Stable   |                                                                          |
+| `patient_assessments`           | [v1.1.0](#v110---2026-02-13) | ✅ Stable   |                                                                          |
+| `patient_assessments_raw_gcs`   | [v1.1.0](#v110---2026-02-13) | ✅ Stable   | Supplemental table with non-imputed GCS scores                           |
+| `respiratory_support`           | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `medication_admin_continuous`   | [v1.2.0](#v120---2026-03-16) | ✅ Stable   |                                                                          |
+| `medication_admin_intermittent` | [v1.2.0](#v120---2026-03-16) | ✅ Stable   |                                                                          |
+| `position`                      | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `crrt_therapy`                  | [v1.2.0](#v120---2026-03-16) | ✅ Stable   |                                                                          |
+| `ecmo_mcs`                      | [v1.2.0](#v120---2026-03-16) | 🧪 Beta    | Initial implementation; `device_category`/`mcs_group` imputation pending |
+| `hospital_diagnosis`            | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `code_status`                   | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `patient_procedures`            | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
+| `input`                         | [v1.2.0](#v120---2026-03-16) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
+| `output`                        | [v1.2.0](#v120---2026-03-16) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
+
+
+## v1.2.0 - 2026-03-16
+
+### Readme
+
+- Tables updated: `crrt_therapy`, `medication_admin_continuous`, `medication_admin_intermittent`.
+- New tables added: `ecmo_mcs`, `input`, `output`.
+
+### New
+
+- add initial implementation of the `ecmo_mcs` table in line with the updated schema. Note that a non-CLIF-standard column `_device_context` is preserved for users' own QA reference (see [ISSUESLOG](ISSUESLOG.md#ecmo_mcs-table) for details).
+- add minimal implementation of the new `input` and `output` tables that contain only data elements that enable the calculation of net urine output in support of SOFA-2 related projects.
+- add documentation of miscellaneous known issues around diagnosis codes in MIMIC-IV in the [ISSUESLOG](ISSUESLOG.md).
+- add the table above that tracks the latest release and status for each CLIF table.
+
+### Fixed
+
+- update `blood_flow_rate` in the `crrt_therapy` table to retain the original mL/min unit in line with the updated data dictionary.
+- update mapping of dextrose to align with the latest mcide version where it is split into 3 `med_category` with no repeats: `dextrose_5_water`, `dextrose_10_water`, `dextrose_other`.
+
+### Future
+
+- impute `device_category` and `mcs_group` for rows where they are missing (similar to the respiratory waterfall)
+
+## v1.1.0 - 2026-02-13
 
 ### Readme
 
@@ -15,12 +65,10 @@ Tables updated: `labs`, `patient_assessments`.
 
 ### New
 
--   improve `lab_category` coverage in the `labs` table by adding `basophils_percent`, `basophils_absolute`, `lymphocytes_absolute`, `eosinophils_absolute`, `neutrophils_absolute`, `monocytes_absolute` and expanding capture of `wbc`.
+- improve `lab_category` coverage in the `labs` table by adding `lymphocytes_absolute`, `eosinophils_absolute`, `neutrophils_absolute`, `monocytes_absolute` and expanding capture of `wbc`.
+- add `patient_assessments_raw_gcs` supplemental table with non-imputed GCS scores taken directly from chartevents. See [ISSUESLOG](ISSUESLOG.md#imputed-vs-raw-gcs-scores) for details on the difference from the imputed GCS in `patient_assessments`.
 
--   add `patient_assessments_raw_gcs` supplemental table with non-imputed GCS scores taken directly from chartevents. See [ISSUESLOG](ISSUESLOG.md#imputed-vs-raw-gcs-scores) for details on the difference from the imputed GCS in `patient_assessments`.
-
-
-## \[v1.0.0\] - 2025-10-27
+## v1.0.0 - 2025-10-27
 
 ### Readme
 
@@ -28,39 +76,30 @@ This is a major update that introduces new tables under the CLIF 2.1.0 version, 
 
 ### New
 
--   add new CLIF 2.1 tables: [`medication_admin_intermittent`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#medication-admin-intermittent), [`code_status`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#code-status), [`hospital_diagnosis`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#hospital-diagnosis), [`patient_procedures`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#patient-procedures)
-
--   add new fields `med_route_name`, `med_route_category`, `mar_action_name`, `mar_action_category` to the two medication administration tables.
-
--   include [out-of-hospital death date](https://mimic.mit.edu/docs/iv/modules/hosp/patients/#dod) as `death_dttm` in the `patient` table. (Previously only the more precise [in-hospital death date-time](https://mimic.mit.edu/docs/iv/modules/hosp/admissions/#admittime-dischtime-deathtime) was used.) [#58](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF/issues/58)
-
--   populate `hospital_id` as 'mimic' and `hospital_type` as 'academic' in the `adt` table.
-
--   add `lab_order_name` and `lab_order_category` to the `labs` table
+- add new CLIF 2.1 tables: [`medication_admin_intermittent`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#medication-admin-intermittent), [`code_status`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#code-status), [`hospital_diagnosis`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#hospital-diagnosis), [`patient_procedures`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#patient-procedures)`
+- add new fields `med_route_name`, `med_route_category`, `mar_action_name`, `mar_action_category` to the two medication administration tables.
+- include [out-of-hospital death date](https://mimic.mit.edu/docs/iv/modules/hosp/patients/#dod) as `death_dttm` in the `patient` table. (Previously only the more precise [in-hospital death date-time](https://mimic.mit.edu/docs/iv/modules/hosp/admissions/#admittime-dischtime-deathtime) was used.) [#58](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF/issues/58)
+- populate `hospital_id` as 'mimic' and `hospital_type` as 'academic' in the `adt` table.
+- add `lab_order_name` and `lab_order_category` to the `labs` table
 
 ### Changed
 
--   the mappings of a few ventilator modes are updated to more precise `mode_category`, reducing the number of rows assigned to 'Other'. See the [mapping spreadsheet](https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/edit?gid=1126032073#gid=1126032073) for the latest mappings and the `status` and `note` columns for the changes.
--   To avoid having an entirely null field, `lab_order_dttm` is now populated with the same [`charttime`](https://mimic.mit.edu/docs/iv/modules/hosp/labevents/#charttime) field in MIMIC's `labevents` table that was previously mapped to `lab_collect_dttm` only.
+- the mappings of a few ventilator modes are updated to more precise `mode_category`, reducing the number of rows assigned to 'Other'. See the [mapping spreadsheet](https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/edit?gid=1126032073#gid=1126032073) for the latest mappings and the `status` and `note` columns for the changes.
+- To avoid having an entirely null field, `lab_order_dttm` is now populated with the same [`charttime`](https://mimic.mit.edu/docs/iv/modules/hosp/labevents/#charttime) field in MIMIC's `labevents` table that was previously mapped to `lab_collect_dttm` only.
 
 ### Fixed
 
--   whitespaces in MIMIC source strings are handled more gracefully to recognize 'Trach mask ' as correctly implying that a tracheostomy had been performed. This fix moves up the time of tracheostomy for patients on 'Trach mask ' which translates to more – and earlier incidence of – rows of `tracheostomy` = 1 in the `respiratory_support` table.
--   the medication tables are overhauled with improved data quality, mostly driven by the development of the dedicated [`medication_admin_intermittent`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#medication-admin-intermittent) table which helps identify and reassign intermittent medication administrations that were previously mislabeled as continuous.
-
-
+- whitespaces in MIMIC source strings are handled more gracefully to recognize 'Trach mask ' as correctly implying that a tracheostomy had been performed. This fix moves up the time of tracheostomy for patients on 'Trach mask ' which translates to more – and earlier incidence of – rows of `tracheostomy` = 1 in the `respiratory_support` table.
+- the medication tables are overhauled with improved data quality, mostly driven by the development of the dedicated [`medication_admin_intermittent`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#medication-admin-intermittent) table which helps identify and reassign intermittent medication administrations that were previously mislabeled as continuous.
 
 ### Future
 
--   update the [`ecmo_mcs`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#ecmo-mcs) table to CLIF 2.1 standard
+- update the [`ecmo_mcs`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#ecmo-mcs) table to CLIF 2.1 standard
+- add the new [`microbiology_culture`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#microbiology-culture) table
+- add the new [`microbiology_nonculture`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#microbiology-nonculture) table
+- add the new [`microbiology_susceptibility`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#microbiology-susceptibility) table
 
--   add the new [`microbiology_culture`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#microbiology-culture) table
-
--   add the new [`microbiology_nonculture`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#microbiology-nonculture) table
-
--   add the new [`microbiology_susceptibility`](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0#microbiology-susceptibility) table
-
-## \[v0.2.0\] - 2025-05-13
+## v0.2.0 - 2025-05-13
 
 ### Readme
 
@@ -70,17 +109,17 @@ To access this version, follow the steps in the [README](README.md#run-the-pipel
 
 ### New
 
--   add the new [`crrt_therapy`](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.1.0.html#crrt-therapy) table
--   add the new [`ecmo_mcs`](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.1.0.html#ecmo_mcs) table
--   add the new `location_type` field in the `adt` table ([#1](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/1))
--   populate the `language_category` field with newly developed mapping in the in the `patient` table
--   populate the `admission_type_category` field with newly developed mapping in the `hospitalization` table
+- add the new [`crrt_therapy`](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.1.0.html#crrt-therapy) table
+- add the new [`ecmo_mcs`](https://clif-consortium.github.io/website/data-dictionary/data-dictionary-2.1.0.html#ecmo_mcs) table
+- add the new `location_type` field in the `adt` table ([#1](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/1))
+- populate the `language_category` field with newly developed mapping in the in the `patient` table
+- populate the `admission_type_category` field with newly developed mapping in the `hospitalization` table
 
 ### Fixed
 
--   add mCIDE files locally in the repo to replace directly reading from raw.githubusercontent which may incur a device-specific SSL certificate error for some users ([#15](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/15))
+- add mCIDE files locally in the repo to replace directly reading from raw.githubusercontent which may incur a device-specific SSL certificate error for some users ([#15](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/15))
 
-## \[v0.1.0\] - 2025-05-01
+## v0.1.0 - 2025-05-01
 
 ### Readme
 
@@ -92,19 +131,19 @@ If you are using this release, please update all CLIF tables as they are all imp
 
 ### New
 
--   add Spontaneous Breathing Trial (SBT) data elements to the CLIF `patient_assessments` table (specifically `sbt_delivery_pass_fail` and `sbt_fail_reason`)
--   add outlier labs values parsed from MIMIC comments
--   add [`hamilton`](https://hamilton.dagworks.io/en/latest/) and [`pandera`](https://www.union.ai/pandera) as light-weight back-end frameworks for pipeline orchestration and data quality validation respectively
+- add Spontaneous Breathing Trial (SBT) data elements to the CLIF `patient_assessments` table (specifically `sbt_delivery_pass_fail` and `sbt_fail_reason`)
+- add outlier labs values parsed from MIMIC comments
+- add [`hamilton`](https://hamilton.dagworks.io/en/latest/) and [`pandera`](https://www.union.ai/pandera) as light-weight back-end frameworks for pipeline orchestration and data quality validation respectively
 
 ### Changed
 
--   convert all date-time fields (ending in `dttm`) from UTC−05:00 (U.S. Eastern Time Zone) to UTC, following a [CLIF-wide design](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF/issues/40) to standardize timezone representation
+- convert all date-time fields (ending in `dttm`) from UTC−05:00 (U.S. Eastern Time Zone) to UTC, following a [CLIF-wide design](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF/issues/40) to standardize timezone representation
 
 ### Fixed
 
--   remove unintended nulls from the `labs` table ([#2](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/2)), `patient` table ([#3](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/3)), `respiratory_support` table ([#5](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/5)), `hospitalization` table ([#4](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/4))
+- remove unintended nulls from the `labs` table ([#2](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/2)), `patient` table ([#3](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/3)), `respiratory_support` table ([#5](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/5)), `hospitalization` table ([#4](https://github.com/Common-Longitudinal-ICU-data-Format/CLIF-MIMIC/issues/4))
 
-## \[v0.0.1\] - 2025-01-31
+## v0.0.1 - 2025-01-31
 
 ### Readme
 
@@ -112,13 +151,13 @@ CLIF tables updated: `respiratory_support`, `patient`
 
 ### Changed
 
--   update the `device_category` mapping of "T-piece" from "IMV" to "Others" pending further review
+- update the `device_category` mapping of "T-piece" from "IMV" to "Others" pending further review
 
 ### Fixed
 
--   correct typo in the config files that mistakenly suggested the latest CLIF version is 2.1 (it should be 2.0)
--   remove two duplicate rows in the CLIF `patient` output table
+- correct typo in the config files that mistakenly suggested the latest CLIF version is 2.1 (it should be 2.0)
+- remove two duplicate rows in the CLIF `patient` output table
 
-## \[v0.0.0\] - 2025-01-21
+## v0.0.0 - 2025-01-21
 
 First release!

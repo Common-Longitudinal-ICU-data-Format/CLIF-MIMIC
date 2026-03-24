@@ -17,11 +17,14 @@
         "patient_assessments": 0,
         "respiratory_support": 0,
         "medication_admin_continuous": 0,
+        "medication_admin_intermittent": 0,
         "position": 0,
         "crrt_therapy": 1,
         "ecmo_mcs": 1,
         "code_status": 1,
         "hospital_diagnosis": 1,
-        "patient_procedures": 1
+        "patient_procedures": 1,
+        "input": 1,
+        "output": 1
     }
 }
