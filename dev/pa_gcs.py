@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.19.11"
+__generated_with = "0.21.1"
 app = marimo.App(width="medium", sql_output="pandas")
 
 
@@ -25,17 +25,44 @@ def _(mo):
 def _(mo):
     pa_raw = mo.sql(
         f"""
-        FROM '/Users/wliao0504/code/clif/CLIF-MIMIC/output/clif-mimic-1.1.0/clif_patient_assessments_raw_gcs.parquet'
+        FROM '/Users/wliao0504/code/clif/CLIF-MIMIC/output/clif-mimic-1.2.0/clif_patient_assessments_raw_gcs.parquet'
         """
     )
     return (pa_raw,)
 
 
 @app.cell
+def _(mo, pa_raw):
+    _df = mo.sql(
+        f"""
+        FROM pa_raw
+        SELECT numerical_value, assessment_category, categorical_value, COUNT(*) as n
+        WHERE 'no response' in LOWER(categorical_value)
+        GROUP BY all
+        """
+    )
+    return
+
+
+@app.cell
+def _(mo, pa_raw):
+    _df = mo.sql(
+        f"""
+        FROM pa_raw
+        SELECT 
+            SUM(CASE WHEN categorical_value = 'No Response-ETT' THEN 1 ELSE 0 END) as n_verbal_ett, 
+        	SUM(CASE WHEN assessment_category = 'gcs_verbal' THEN 1 ELSE 0 END) as n_verbal_total,
+        	n_verbal_ett / n_verbal_total as pct_verbal_ett
+        """
+    )
+    return
+
+
+@app.cell
 def _(mo):
     pa_imputed = mo.sql(
         f"""
-        FROM '/Users/wliao0504/code/clif/CLIF-MIMIC/output/clif-mimic-1.1.0/clif_patient_assessments.parquet'
+        FROM '/Users/wliao0504/code/clif/CLIF-MIMIC/output/clif-mimic-1.2.0/clif_patient_assessments.parquet'
         SELECT *
         WHERE assessment_category IN ('gcs_eyes', 'gcs_verbal', 'gcs_motor', 'gcs_total')
         """

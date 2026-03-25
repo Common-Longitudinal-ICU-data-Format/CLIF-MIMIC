@@ -310,7 +310,7 @@ def gcs_raw_fetched() -> pd.DataFrame:
         , assessment_category: m.assessment_category
         , assessment_group: 'Neurological'
         , numerical_value: CASE
-            WHEN e.value = 'No Response-ETT' THEN 0
+            WHEN e.value = 'No Response-ETT' THEN NULL -- UPDATED from 0 to NULL
             ELSE e.valuenum::FLOAT
             END
         , categorical_value: e.value
@@ -319,7 +319,10 @@ def gcs_raw_fetched() -> pd.DataFrame:
     return con.execute(query).fetchdf()
 
 def gcs_raw_total_computed(gcs_raw_fetched: pd.DataFrame) -> pd.DataFrame:
-    """Pivots raw GCS sub-scores to wide, computes total, unions back with sub-scores."""
+    """
+    Pivots raw GCS sub-scores to wide, computes total, unions back with sub-scores.
+    NOTE: this node is not used in the latest version as we want to present the GCS scores in its rawest form which does not have the total computed.
+    """
     logger.info("computing raw GCS total from sub-scores...")
     query = """
     WITH w AS (
@@ -349,10 +352,10 @@ def gcs_raw_total_computed(gcs_raw_fetched: pd.DataFrame) -> pd.DataFrame:
     """
     return con.execute(query).fetchdf()
 
-def gcs_raw_cleaned(gcs_raw_total_computed: pd.DataFrame) -> pd.DataFrame:
+def gcs_raw_cleaned(gcs_raw_fetched: pd.DataFrame) -> pd.DataFrame:
     """Cleans and formats raw GCS data for output."""
     logger.info("cleaning raw GCS data...")
-    df = gcs_raw_total_computed.copy()
+    df = gcs_raw_fetched.copy()
     df["hospitalization_id"] = df["hospitalization_id"].astype("string")
     df["categorical_value"] = df["categorical_value"].astype("string")
     df["recorded_dttm"] = pd.to_datetime(df["recorded_dttm"])
