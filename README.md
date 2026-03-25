@@ -6,7 +6,19 @@
 [![CLIF 2.1.0](https://img.shields.io/badge/CLIF-2.1.0-green.svg)](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0)
 [![MIMIC-IV 3.1](https://img.shields.io/badge/MIMIC--IV-3.1-orange.svg)](https://physionet.org/content/mimiciv/)
 
+> [!NOTE]
+> This project is now [published](https://physionet.org/content/mimic-iv-ext-clif) on PhysioNet! All tables are available for direct download for PhysioNet users who have completed [MIMIC-credentialing](https://mimic.mit.edu/docs/gettingstarted/) and signed the relevant DUAs. Any future releases will be uploaded and versioned on PhysioNet, but in the event of any lag, please refer to this repository for the source code to generate the most up-to-date tables or reach out to us by raising an issue or contacting the lead developer of this project. 
+
 This repository provides an ETL pipeline to transform the [MIMIC-IV](https://mimic.mit.edu/) database into the [Common Longitudinal ICU data Format (CLIF)](https://clif-consortium.github.io/website/). The latest release is v1.2.0 (March 2026) and transforms MIMIC-IV 3.1 into CLIF 2.1.0.
+
+## Quick References
+
+- 🏗️ [PhysioNet Project Page](https://physionet.org/content/mimic-iv-ext-clif)
+- 📚 [CLIF Website & Data Dictionary](https://clif-icu.com/data-dictionary)
+- 🗺️ [MIMIC-to-CLIF Mapping Spreadsheet](https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/)
+- 📝 [Change Log](CHANGELOG.md)
+- 📋 [Issues Log](ISSUESLOG.md)
+
 
 ## Table of Contents
 
@@ -17,14 +29,10 @@ This repository provides an ETL pipeline to transform the [MIMIC-IV](https://mim
   - [Confirm version](#confirm-version)
   - [Run the pipeline](#run-the-pipeline)
 - [Output](#output)
-- [Resources](#resources)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## Getting Started
-
-> [!NOTE]
-> This project is being submitted to PhysioNet. All tables will be available for direct download for MIMIC-credentialed users when the submission is approved. For any future releases, we will upload the download-ready CLIF tables to the PhysioNet [project page](https://physionet.org/content/mimic-iv-ext-clif), but in the event of any lag, please refer to this repository for the code to generate the most up-to-date version
 
 To run the pipeline, first review the [change log](CHANGELOG.md) to find the latest or preferred version; then follow the instructions in the [Usage](#usage) section below to generate the dataset.
 
@@ -192,12 +200,6 @@ Generated Parquet files will be in `output/rclif-2.1.0/` (or your custom output 
 - `output/logs/clif_mimic_all.log` - All INFO+ messages
 - `output/logs/clif_mimic_errors.log` - Warnings and errors only
 
-## Resources
-
-- 📚 [CLIF Website & Data Dictionary](https://clif-icu.com/data-dictionary)
-- 🗺️ [MIMIC-to-CLIF Mapping Spreadsheet](https://docs.google.com/spreadsheets/d/1QhybvnlIuNFw0t94JPE6ei2Ei6UgzZAbGgwjwZCTtxE/)
-- 📝 [Change Log](CHANGELOG.md)
-- 📋 [Issues Log](ISSUESLOG.md)
 
 ## Contributing
 
