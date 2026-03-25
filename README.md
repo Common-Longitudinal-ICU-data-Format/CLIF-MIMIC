@@ -7,7 +7,7 @@
 [![MIMIC-IV 3.1](https://img.shields.io/badge/MIMIC--IV-3.1-orange.svg)](https://physionet.org/content/mimiciv/)
 
 > [!NOTE]
-> This project is now [published](https://physionet.org/content/mimic-iv-ext-clif) on [PhysioNet](https://physionet.org/)! All tables are available for direct download for PhysioNet users who have completed [MIMIC-credentialing](https://mimic.mit.edu/docs/gettingstarted/) and signed the relevant DUAs. Any future releases will be uploaded and versioned on PhysioNet, but in the event of any lag, please refer to this repository for the source code to generate the most up-to-date tables or reach out to us by raising an issue or contacting the lead developer of this project. 
+> This project is now [published](https://physionet.org/content/mimic-iv-ext-clif) on PhysioNet! All tables are available for direct download for PhysioNet users who have completed [MIMIC-credentialing](https://mimic.mit.edu/docs/gettingstarted/) and signed the relevant DUAs. Any future releases will be uploaded and versioned on PhysioNet, but in the event of any lag, please refer to this repository for the source code to generate the most up-to-date tables or reach out to us by raising an issue or contacting the lead developer of this project. 
 
 This repository provides an ETL pipeline to transform the [MIMIC-IV](https://mimic.mit.edu/) database into the [Common Longitudinal ICU data Format (CLIF)](https://clif-consortium.github.io/website/). The latest release is v1.2.0 (March 2026) and transforms MIMIC-IV 3.1 into CLIF 2.1.0.
 
