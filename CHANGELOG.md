@@ -20,7 +20,7 @@ The table below shows the latest release and status of each CLIF table. If you o
 | `vitals`                        | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
 | `labs`                          | [v1.1.0](#v110---2026-02-13) | ✅ Stable   |                                                                          |
 | `patient_assessments`           | [v1.1.0](#v110---2026-02-13) | ✅ Stable   |                                                                          |
-| `patient_assessments_raw_gcs`   | [v1.1.0](#v120---2026-03-24) | ✅ Stable   | Supplemental table with non-imputed GCS scores                           |
+| `patient_assessments_raw_gcs`   | [v1.2.0](#v120---2026-03-24) | ✅ Stable   | Supplemental table with non-imputed GCS scores                           |
 | `respiratory_support`           | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
 | `medication_admin_continuous`   | [v1.2.0](#v120---2026-03-24) | ✅ Stable   |                                                                          |
 | `medication_admin_intermittent` | [v1.2.0](#v120---2026-03-24) | ✅ Stable   |                                                                          |
