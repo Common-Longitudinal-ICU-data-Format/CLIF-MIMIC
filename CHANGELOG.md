@@ -3,7 +3,7 @@
 
 | MIMIC version | CLIF version                                                        | Latest CLIF-MIMIC release    |
 | ------------- | ------------------------------------------------------------------- | ---------------------------- |
-| IV-3.1        | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.2.0](#v120---2026-03-16) |
+| IV-3.1        | [2.1.0](https://clif-icu.com/data-dictionary/data-dictionary-2.1.0) | [v1.2.0](#v120---2026-03-24) |
 | IV-3.1        | [2.0.0](https://clif-icu.com/data-dictionary/data-dictionary-2.0.0) | [v0.1.0](#v010---2025-05-01) |
 
 
@@ -20,25 +20,25 @@ The table below shows the latest release and status of each CLIF table. If you o
 | `vitals`                        | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
 | `labs`                          | [v1.1.0](#v110---2026-02-13) | ✅ Stable   |                                                                          |
 | `patient_assessments`           | [v1.1.0](#v110---2026-02-13) | ✅ Stable   |                                                                          |
-| `patient_assessments_raw_gcs`   | [v1.1.0](#v110---2026-02-13) | ✅ Stable   | Supplemental table with non-imputed GCS scores                           |
+| `patient_assessments_raw_gcs`   | [v1.1.0](#v120---2026-03-24) | ✅ Stable   | Supplemental table with non-imputed GCS scores                           |
 | `respiratory_support`           | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
-| `medication_admin_continuous`   | [v1.2.0](#v120---2026-03-16) | ✅ Stable   |                                                                          |
-| `medication_admin_intermittent` | [v1.2.0](#v120---2026-03-16) | ✅ Stable   |                                                                          |
+| `medication_admin_continuous`   | [v1.2.0](#v120---2026-03-24) | ✅ Stable   |                                                                          |
+| `medication_admin_intermittent` | [v1.2.0](#v120---2026-03-24) | ✅ Stable   |                                                                          |
 | `position`                      | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
-| `crrt_therapy`                  | [v1.2.0](#v120---2026-03-16) | ✅ Stable   |                                                                          |
-| `ecmo_mcs`                      | [v1.2.0](#v120---2026-03-16) | 🧪 Beta    | Initial implementation; `device_category`/`mcs_group` imputation pending |
+| `crrt_therapy`                  | [v1.2.0](#v120---2026-03-24) | ✅ Stable   |                                                                          |
+| `ecmo_mcs`                      | [v1.2.0](#v120---2026-03-24) | 🧪 Beta    | Initial implementation; `device_category`/`mcs_group` imputation pending |
 | `hospital_diagnosis`            | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
 | `code_status`                   | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
 | `patient_procedures`            | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
-| `input`                         | [v1.2.0](#v120---2026-03-16) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
-| `output`                        | [v1.2.0](#v120---2026-03-16) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
+| `input`                         | [v1.2.0](#v120---2026-03-24) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
+| `output`                        | [v1.2.0](#v120---2026-03-24) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
 
 
-## v1.2.0 - 2026-03-16
+## v1.2.0 - 2026-03-24
 
 ### Readme
 
-- Tables updated: `crrt_therapy`, `medication_admin_continuous`, `medication_admin_intermittent`.
+- Tables updated: `crrt_therapy`, `medication_admin_continuous`, `medication_admin_intermittent`, `patient_assessments_raw_gcs`.
 - New tables added: `ecmo_mcs`, `input`, `output`.
 
 ### New
@@ -52,6 +52,7 @@ The table below shows the latest release and status of each CLIF table. If you o
 
 - update `blood_flow_rate` in the `crrt_therapy` table to retain the original mL/min unit in line with the updated data dictionary.
 - update mapping of dextrose to align with the latest mcide version where it is split into 3 `med_category` with no repeats: `dextrose_5_water`, `dextrose_10_water`, `dextrose_other`.
+- correct the `numerical_value` of `gcs_verbal` for intubated patients ("No Response-ETT") from 0 to NULL and remove the computed `gcs_total` in the `patient_assessments_raw_gcs` supplemental table. See [ISSUESLOG](ISSUESLOG.md#imputed-vs-raw-gcs-scores) for details.
 
 ### Future
 
