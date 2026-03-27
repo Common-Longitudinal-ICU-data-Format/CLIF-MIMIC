@@ -4,7 +4,7 @@ MIMIC-IV-Ext-CLIF is a derived dataset that transforms MIMIC-IV v3.1 into the Co
 
 ## Dataset Contents
 
-This dataset contains 14 CLIF tables (version 2.1.0) derived from MIMIC-IV v3.1, stored as Parquet files:
+The dataset consists of 17 CLIF tables derived from MIMIC-IV v3.1, each stored as a separate Parquet file, along with a supplemental table (clif_patient_assessments_raw_gcs) containing non-imputed GCS scores:
 
 ```
 mimic-iv-ext-clif/
@@ -21,6 +21,9 @@ mimic-iv-ext-clif/
 ├── clif_medication_admin_intermittent.parquet
 ├── clif_position.parquet
 ├── clif_crrt_therapy.parquet
+├── clif_ecmo_mcs.parquet
+├── clif_input.parquet
+├── clif_output.parquet
 ├── clif_code_status.parquet
 ├── clif_hospital_diagnosis.parquet
 └── clif_patient_procedures.parquet

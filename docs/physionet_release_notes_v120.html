@@ -1,0 +1,169 @@
+<p>For earlier releases, see the detailed release notes in the CHANGELOG [16] of this project's GitHub repository.</p>
+<p>In the event of a lag between syncing the most up-to-date release onto here, please always refer to the CHANGELOG [16] of this project's GitHub repository for the most up-to-date releases as well as past releases.</p>
+<table><colgroup><col><col><col></colgroup>
+<thead>
+<tr>
+<th scope="col">MIMIC version</th>
+<th scope="col">CLIF version</th>
+<th scope="col">Latest CLIF-MIMIC release</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IV-3.1</td>
+<td>2.1.0</td>
+<td>v1.2.0</td>
+</tr>
+<tr>
+<td>IV-3.1</td>
+<td>2.0.0</td>
+<td>v0.1.0</td>
+</tr>
+</tbody>
+</table>
+<h3>Table Release and Status Tracker</h3>
+<p>The table below shows the latest release and status of each CLIF table. If you only need specific tables, refer to the "Last Updated in" column to identify the release containing the most up-to-date version. You do not need to rebuild tables whose release version has not changed since your last build.</p>
+<table><colgroup><col><col><col><col></colgroup>
+<thead>
+<tr>
+<th scope="col">Table</th>
+<th scope="col">Last Updated in</th>
+<th scope="col">Status</th>
+<th scope="col">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>patient</code></td>
+<td>v1.0.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>hospitalization</code></td>
+<td>v1.0.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>adt</code></td>
+<td>v1.0.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>vitals</code></td>
+<td>v1.0.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>labs</code></td>
+<td>v1.1.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>patient_assessments</code></td>
+<td>v1.1.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>patient_assessments_raw_gcs</code></td>
+<td>v1.2.0</td>
+<td>✅ Stable</td>
+<td>Supplemental table with non-imputed GCS scores</td>
+</tr>
+<tr>
+<td><code>respiratory_support</code></td>
+<td>v1.0.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>medication_admin_continuous</code></td>
+<td>v1.2.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>medication_admin_intermittent</code></td>
+<td>v1.2.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>position</code></td>
+<td>v1.0.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>crrt_therapy</code></td>
+<td>v1.2.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ecmo_mcs</code></td>
+<td>v1.2.0</td>
+<td>🧪 Beta</td>
+<td>Initial implementation; <code>device_category</code>/<code>mcs_group</code> imputation pending</td>
+</tr>
+<tr>
+<td><code>hospital_diagnosis</code></td>
+<td>v1.0.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>code_status</code></td>
+<td>v1.0.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>patient_procedures</code></td>
+<td>v1.0.0</td>
+<td>✅ Stable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>input</code></td>
+<td>v1.2.0</td>
+<td>🧩 Partial</td>
+<td>Minimal implementation for net urine output calculation only</td>
+</tr>
+<tr>
+<td><code>output</code></td>
+<td>v1.2.0</td>
+<td>🧩 Partial</td>
+<td>Minimal implementation for net urine output calculation only</td>
+</tr>
+</tbody>
+</table>
+<h3>[v1.2.0] - 2026-03-24</h3>
+<h4>Readme</h4>
+<p>Tables updated: <code>crrt_therapy</code>, <code>medication_admin_continuous</code>, <code>medication_admin_intermittent</code>, <code>patient_assessments_raw_gcs</code>.</p>
+<p>New tables added: <code>ecmo_mcs</code>, <code>input</code>, <code>output</code>.</p>
+<h4>New</h4>
+<ul>
+<li>Add initial implementation of the <code>ecmo_mcs</code> table in line with the updated schema. Note that a non-CLIF-standard column <code>_device_context</code> is preserved for users' own QA reference (see ISSUESLOG [14] for details).</li>
+<li>Add minimal implementation of the new <code>input</code> and <code>output</code> tables that contain only data elements that enable the calculation of net urine output in support of SOFA-2 related projects.</li>
+<li>Add documentation of miscellaneous known issues around diagnosis codes in MIMIC-IV in the ISSUESLOG [14].</li>
+</ul>
+<h4>Fixed</h4>
+<ul>
+<li>Update <code>blood_flow_rate</code> in the <code>crrt_therapy</code> table to retain the original mL/min unit in line with the updated data dictionary.</li>
+<li>Update mapping of dextrose to align with the latest mcide version where it is split into 3 <code>med_category</code> with no repeats: <code>dextrose_5_water</code>, <code>dextrose_10_water</code>, <code>dextrose_other</code>.</li>
+<li>Correct the <code>numerical_value</code> of <code>gcs_verbal</code> for intubated patients ("No Response-ETT") from 0 to NULL and remove the computed <code>gcs_total</code> in the <code>patient_assessments_raw_gcs</code> supplemental table. See ISSUESLOG [14] for details.</li>
+</ul>
+<h3>[v1.1.0] - 2026-02-13</h3>
+<h4>Readme</h4>
+<p>Tables updated: <code>labs</code>, <code>patient_assessments</code>.</p>
+<h4>New</h4>
+<ul>
+<li>Improve <code>lab_category</code> coverage in the <code>labs</code> table by adding <code>lymphocytes_absolute</code>, <code>eosinophils_absolute</code>, <code>neutrophils_absolute</code>, <code>monocytes_absolute</code> and expanding capture of <code>wbc</code>.</li>
+<li>Add <code>patient_assessments_raw_gcs</code> supplemental table with non-imputed GCS scores taken directly from <code>chartevents</code>. See ISSUESLOG [14] for details on the difference from the imputed GCS in <code>patient_assessments</code>.</li>
+</ul>
