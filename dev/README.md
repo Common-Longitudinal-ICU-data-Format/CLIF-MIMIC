@@ -129,3 +129,7 @@ make mo
 # Or directly for a specific notebook
 uv run marimo edit dev/{notebook}.py --watch
 ```
+
+## Stress-Test Utilities
+
+For generating an enlarged copy of a CLIF dataset (`generate_stress_test_data.py`) and profiling row / unique-ID counts (`profile_cohort_size.py`), see [`stress_test.md`](stress_test.md).
