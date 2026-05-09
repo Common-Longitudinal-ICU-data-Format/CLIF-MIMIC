@@ -32,6 +32,14 @@ The table below shows the latest release and status of each CLIF table. If you o
 | `patient_procedures`            | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
 | `input`                         | [v1.2.0](#v120---2026-03-24) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
 | `output`                        | [v1.2.0](#v120---2026-03-24) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
+| `invasive_hemodynamics`         | Unreleased                   | 🧪 Beta    | 8 mapped items; `device_name` is NULL (MIMIC does not record device names) |
+
+
+## Unreleased
+
+### New
+
+- add initial implementation of the `invasive_hemodynamics` table with 8 validated mapped items from `chartevents` (CVP, PA systolic/diastolic/mean, PCWP, CCO, CO thermodilution, EF). `device_category` is inferred from measurement type (`central_venous_catheter` for CVP, `pulmonary_artery_catheter` for all PA catheter measurements). `device_name` is NULL as MIMIC does not record device names.
 
 
 ## v1.2.0 - 2026-03-24

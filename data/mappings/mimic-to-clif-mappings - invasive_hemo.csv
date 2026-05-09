@@ -1,0 +1,56 @@
+measure_category,itemid,label,abbreviation,linksto,category,unitname,param_type,count,value_instances,status,reviewer,note
+cvp,220074,Central Venous Pressure,CVP,chartevents,Hemodynamics,mmHg,Numeric,993375,"Min: -41.0, Mean: 14.35, Max: 7785.0",validated,Max,
+pa_diastolic,220060,Pulmonary Artery Pressure diastolic,PAPd,chartevents,Hemodynamics,mmHg,Numeric,398801,"Min: -33.0, Mean: 19.83, Max: 2834.0",validated,Max,
+pa_systolic,220059,Pulmonary Artery Pressure systolic,PAPs,chartevents,Hemodynamics,mmHg,Numeric,398701,"Min: -15.0, Mean: 39.14, Max: 662.0",validated,Max,
+pa_mean,220061,Pulmonary Artery Pressure mean,PAPm,chartevents,Hemodynamics,mmHg,Numeric,392768,"Min: -38.0, Mean: 27.17, Max: 3731.0",validated,Max,
+NO MAPPING,220765,Intra Cranial Pressure,ICP,chartevents,Hemodynamics,mmHg,Numeric,242758,"Min: -41.0, Mean: 9.4, Max: 381.0",validated,Max,
+NO MAPPING,223772,SvO2,SvO2,chartevents,Hemodynamics,%,Numeric,224779,"Min: 0.0, Mean: 65.45, Max: 5952.0",validated,Max,
+cco,224842,Cardiac Output (CCO),CO (CCO),chartevents,Hemodynamics,L/min,Numeric,188469,"Min: -339.2, Mean: 5.23, Max: 88.0",validated,Max,"CCO = Continuous Cardiac Output, fair to report, however, this can be done by a few methods (see  below)."
+NO MAPPING,227066,Cerebral Perfusion Pressure,CPP,chartevents,Hemodynamics,mmHg,Numeric,171272,"Min: -40.0, Mean: 81.84, Max: 997.0",validated,Max,"CCP = MAP - ICP, this can be derived."
+NO MAPPING,223773,PA Line cm Mark,PA Line cm Mark,chartevents,Hemodynamics,cm,Numeric,58682,"Min: 0.0, Mean: 52.87, Max: 550.0",validated,Max,"This isn't really an invasive hemodynamic, it's measurement for how far in a catheter is in the body."
+cardiac_output_thermodilution,220088,Cardiac Output (thermodilution),CO (thermodilution),chartevents,Hemodynamics,L/min,Numeric,29568,"Min: 0.0, Mean: 5.03, Max: 36.2",validated,Max,
+NO MAPPING,227543,CO (Arterial),CO (Arterial),chartevents,Hemodynamics,L/min,Numeric,19704,"Min: 1.0, Mean: 6.32, Max: 19.7",validated,Max,"CO (cardiac output) is a measurement which can be obtained by one of several methods. Pulse contour analysis, Fick, and thermodilution are the most common. Same difficulty with stroke volume."
+NO MAPPING,227546,SVV (Arterial),SVV (Arterial),chartevents,Hemodynamics,%,Numeric,17557,"Min: 0.0, Mean: 12.23, Max: 1370.0",validated,Max,
+NO MAPPING,227805,SvO2 SQI,SvO2 SQI,chartevents,Hemodynamics,,Text,16498,"1: 12712, 2: 1838, 4: 1244, 3: 704",validated,Max,It is a laboratory value.
+NO MAPPING,227547,SV (Arterial),SV (Arterial),chartevents,Hemodynamics,mL/beat,Numeric,13522,"Min: 3.0, Mean: 70.51, Max: 810.0",validated,Max,To vital signs
+pcwp,223771,PCWP,PCWP,chartevents,Hemodynamics,mmHg,Numeric,8827,"Min: 0.0, Mean: 20.16, Max: 79.0",validated,Max,"AKA PAOP, wedge"
+NO MAPPING,227541,SvO2 Calibrated,SvO2 Calibrated,datetimeevents,Hemodynamics,,Date and time,7761,"Earliest: 2110-03-15 14:14:00, Latest: 2211-08-19 16:25:00",validated,Max,Date/time rather than value.
+NO MAPPING,227989,Intra Cranial Pressure #2,IC2,chartevents,Hemodynamics,mmHg,Numeric,5124,"Min: -30.0, Mean: 11.99, Max: 134.0",validated,Max,"Decided to not have this in the invasive hemodynamic table, this will be a better fit for neurologic diagnostics."
+NO MAPPING,228874,HM II- Speed (RPM),HM II- Speed (RPM),chartevents,Hemodynamics,None,Numeric,4960,"Min: 4.0, Mean: 7448.31, Max: 85900.0",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,228875,HM II- PI,HM II- PI,chartevents,Hemodynamics,None,Numeric,4940,"Min: 1.3, Mean: 4.0, Max: 54.0",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,228876,HM II- Power,HM II- Power,chartevents,Hemodynamics,None,Numeric,4937,"Min: 2.9, Mean: 5.28, Max: 303.0",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,228873,HM II- Flow,HM II- Flow,chartevents,Hemodynamics,L/min,Numeric,4733,"Min: 0.0, Mean: 15.11, Max: 9400.0",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,229235,Brain Tissue Oxygenation,PbtO2,chartevents,Hemodynamics,mmHg,Numeric,4508,"Min: -15.0, Mean: 25.94, Max: 231.0",validated,Max,"Decided to not have this in the invasive hemodynamic table, this will be a better fit for neurologic diagnostics."
+NO MAPPING,228872,HM II- Mean BP,HM II- Mean BP,chartevents,Hemodynamics,mmHg,Numeric,3939,"Min: 6.3, Mean: 74.36, Max: 110.0",validated,Max,"This represents the mean arterial pressure (MAP) specifically for a patient with a heartmate II LVAD, can be invasive or non-invasive."
+NO MAPPING,229236,Cerebral Temperature (C),Cerebral T (C),chartevents,Hemodynamics,°C,Numeric,3924,"Min: 32.9, Mean: 37.09, Max: 39.47",validated,Max,"""temp_c"" in mCIDE/vitals/clif_vitals_categories.csv"
+NO MAPPING,228871,HM II- Backup Cont in room with pt settings,HM II- Backup Cont in room with pt settings_201904,chartevents,Hemodynamics,,Checkbox,3865,"1: 3858, 0: 7",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,228869,HM II- Perc Lock fully engaged,HM II- Perc Lock fully engaged,chartevents,Hemodynamics,,Checkbox,3824,"1: 3816, 0: 8",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,228870,HM II- Sys Cont in Prim Mode,HM II- Sys Cont in Prim Mode,chartevents,Hemodynamics,,Checkbox,3780,"1: 3766, 0: 14",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,227549,ScvO2 (Presep),ScvO2 (Presep),chartevents,Hemodynamics,%,Numeric,2428,"Min: 0.0, Mean: 73.41, Max: 97.0",validated,Max,
+NO MAPPING,220128,Right Ventricular Assist Device Flow,RVAD,chartevents,Hemodynamics,L/min,Numeric,1019,"Min: 1.1, Mean: 4.07, Max: 5.3",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,223775,VAD Beat Rate R,VAD Beat Rate R,chartevents,Hemodynamics,bpm,Numeric,1000,"Min: 3.6, Mean: 42.9, Max: 64.0",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,224659,Vacuum Assist,Vacuum Assist,chartevents,Hemodynamics,mmHg,Numeric,997,"Min: 35.0, Mean: 57.28, Max: 80.0",validated,Max,
+gef,226272,EF (CCO),EF (CCO),chartevents,Hemodynamics,%,Numeric,307,"Min: 12.0, Mean: 33.39, Max: 58.0",validated,Max,bold = non-invasive device?
+NO MAPPING,227806,ScvO2 (Presep) SQI,ScvO2 (Presep) SQI,chartevents,Hemodynamics,,Text,233,"1: 165, 2: 42, 3: 15, 4: 11",validated,Max,I am not sure what (Presep) and SQI stand for.
+NO MAPPING,224660,ECMO,ECMO,chartevents,Hemodynamics,L/min,Numeric,213,"Min: 0.0, Mean: 3.47, Max: 6.13",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,229238,FiO2 Challenge,FiO2 Challenge,chartevents,Hemodynamics,,Text,192,"Yes: 173, No: 19",validated,Max,Unclear context for this variable.
+NO MAPPING,229239,FiO2 Challenge Result,FiO2 Challenge Result,chartevents,Hemodynamics,,Text,164,"Pass: 140, Fail: 24",validated,Max,Unclear context for this variable.
+NO MAPPING,227542,ScvO2 (Presep) Calibrated,ScvO2 (Presep) Calibrated,datetimeevents,Hemodynamics,,Date and time,123,"Earliest: 2110-09-08 00:00:00, Latest: 2195-10-24 16:30:00",validated,Max,I am not sure what (Presep) means.
+NO MAPPING,220125,Left Ventricular Assit Device Flow,LVAD,chartevents,Hemodynamics,L/min,Numeric,53,"Min: 1.2, Mean: 2.98, Max: 4.6",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,224363,VAD Beat Rate L,VAD Beat Rate L,chartevents,Hemodynamics,bpm,Numeric,28,"Min: 0.0, Mean: 36.32, Max: 55.0",validated,Max,Likely a better fit for mcs section.
+NO MAPPING,220069,Left Artrial Pressure,LAP,chartevents,Hemodynamics,mmHg,Numeric,1,"Min: , Mean: , Max:",validated,Max,This is a very uncommon measurement and it doesn't look like it's very populated. pcwp is an indirect measurement of LAP.
+NO MAPPING,228368,Cardiac Index (CI NICOM),Cardiac Index (CI NICOM),chartevents,NICOM,L/min/m2,Numeric,11773,"Min: 0.0, Mean: 3.19, Max: 304.0",validated,Max,^ cardiac output above. ALL NICOM ARE NON-INVASIVE AND SHOULDN'T BE IN THIS TABLE
+NO MAPPING,228375,Stroke Volume Index (SVI NICOM),Stroke Volume Index (SVI NICOM),chartevents,NICOM,%,Numeric,10653,"Min: -2.7, Mean: 35.3, Max: 3973.5",validated,Max,
+NO MAPPING,228369,Cardiac Output (CO NICOM),Cardiac Output (CO NICOM),chartevents,NICOM,L/min,Numeric,10047,"Min: 0.0, Mean: 5.99, Max: 83.0",validated,Max,^ cardiac output above. ALL NICOM ARE NON-INVASIVE AND SHOULDN'T BE IN THIS TABLE
+NO MAPPING,228374,Stroke Volume (SV NICOM),Stroke Volume (SV NICOM),chartevents,NICOM,mL/beat,Numeric,9297,"Min: 0.0, Mean: 64.99, Max: 1146.0",validated,Max,^ cardiac output above.
+NO MAPPING,228376,Stroke Volume Variation (SVV NICOM),Stroke Volume Variation (SVI NICOM),chartevents,NICOM,None,Numeric,7618,"Min: -1.28, Mean: 17.95, Max: 12204.0",validated,Max,SVV can be calculated from non-invasive and invasive sources.
+NO MAPPING,228382,Total Peripheral Resistance Index (TPRI) (NICOM),TPRI (NICOM),chartevents,NICOM,dynes*sec/cm5/m2,Numeric,3357,"Min: -0.3, Mean: 3670.56, Max: 3317200.0",validated,Max,SVR can be calculated from non-invasive and invasive sources.
+NO MAPPING,228381,Total Peripheral Resistance (TPR) (NICOM),TPR (NICOM),chartevents,NICOM,dynes*sec/cm5,Numeric,3190,"Min: 0.0, Mean: 1182.25, Max: 21445.0",validated,Max,SVR can be calculated from non-invasive and invasive sources.
+NO MAPPING,228373,Passive Leg Raise Performed,Passive Leg Raise Performed,chartevents,NICOM,,Text,3174,"No: 1642, Yes: 1532",validated,Max,Not an invasive hemodynamic
+NO MAPPING,228377,SVI Change,SVI Change,chartevents,NICOM,%,Numeric,1643,"Min: -39.4, Mean: 15.72, Max: 5026.0",validated,Max,Not an invasive hemodynamic
+NO MAPPING,228372,Leg Raise Result (NICOM),Leg Raise Result (NICOM),chartevents,NICOM,,Text,1606,"< 10% = NOT Fluid responsive: 834, >/= 10% = Fluid responsive: 772",validated,Max,Calculated value.
+NO MAPPING,228370,CO / CI Change,CO / CI Change,chartevents,NICOM,%,Numeric,1412,"Min: -39.4, Mean: 11.17, Max: 155.8",validated,Max,Calculated value.
+NO MAPPING,228379,TFCd0 (NICOM),TFCd0 (NICOM),chartevents,NICOM,%,Numeric,464,"Min: -32.0, Mean: 10.74, Max: 648.0",validated,Max,"Not intially in my spreadsheet, this is a reasonable metric to map. It has been added to the spreadsheet."
+NO MAPPING,228380,Thoracic Fluid Content (TFC) (NICOM),TFC (NICOM),chartevents,NICOM,None,Numeric,441,"Min: -4.1, Mean: 298.43, Max: 100361.0",validated,Max,"Not intially in my spreadsheet, this is a reasonable metric to map. It has been added to the spreadsheet."
+NO MAPPING,228378,TFCd (NICOM),TFCd (NICOM),chartevents,NICOM,%,Numeric,360,"Min: -44.0, Mean: 0.84, Max: 73.9",validated,Max,This is a calculated value (TFC-TFCd0).
+NO MAPPING,228371,DO2I (NICOM),DO2I (NICOM),chartevents,NICOM,mL/min/m2,Numeric,1,"Min: , Mean: , Max:",validated,Max,"Not intially in my spreadsheet, this is a reasonable metric to map. It has been added to the spreadsheet."
