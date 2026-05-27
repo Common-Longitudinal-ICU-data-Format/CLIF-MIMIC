@@ -39,7 +39,8 @@ CONT_SCHEMA = pa.DataFrameSchema(
         "med_route_name": pa.Column(str, nullable=False),
         "med_route_category": pa.Column(str, checks=[pa.Check.isin(CONT_MED_ROUTE_CATEGORIES)], nullable=False),
         "med_group": pa.Column(str, nullable=False),
-    },  
+        "caregiver_id": pa.Column(str, nullable=True),
+    },
     strict=True,
 )
 
@@ -57,7 +58,8 @@ INTM_SCHEMA = pa.DataFrameSchema(
         "med_route_name": pa.Column(str, nullable=False),
         "med_route_category": pa.Column(str, checks=[pa.Check.isin(INTM_MED_ROUTE_CATEGORIES)], nullable=False),
         "med_group": pa.Column(str, nullable=False),
-    },  
+        "caregiver_id": pa.Column(str, nullable=True),
+    },
     strict=True,
 )
 
@@ -156,7 +158,8 @@ def mapped_and_augmented(med_route_mapped: duckdb.DuckDBPyRelation, med_category
         , e.label
         , e.med_route_name
         , e.med_route_category
-        , _item_class: m.decision 
+        , e.caregiver_id
+        , _item_class: m.decision
         , _duration_in_mins: EXTRACT(EPOCH FROM (endtime - starttime)) / 60 
         , _last_1min: CASE WHEN (endtime - starttime) = INTERVAL '1 minute'
             THEN 1 ELSE 0 END 
@@ -253,6 +256,7 @@ def intm_flattened(intm_reassembled: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPy
             )
         , med_route_name
         , med_route_category
+        , caregiver_id
     ORDER BY hospitalization_id, med_order_id, med_category, admin_dttm
     """
     intm_flattened = duckdb.sql(q)
@@ -287,6 +291,7 @@ def intm_cast_w_med_group(intm_flattened: duckdb.DuckDBPyRelation, intm_med_grou
         , med_route_name: CAST(med_route_name AS VARCHAR)
         , med_route_category: CAST(med_route_category AS VARCHAR)
         , med_group: CAST(med_group AS VARCHAR)
+        , caregiver_id: CAST(caregiver_id AS VARCHAR)
     """
     intm_cast_w_med_group = duckdb.sql(q).df()
     intm_cast_w_med_group['admin_dttm'] = convert_tz_to_utc(intm_cast_w_med_group['admin_dttm'])
@@ -372,6 +377,7 @@ def cont_flattened(cont_deduped_by_timestamps: duckdb.DuckDBPyRelation) -> duckd
         , med_dose_unit: rateuom
         , med_route_name
         , med_route_category
+        , caregiver_id
     ORDER BY hospitalization_id, med_order_id, med_category, admin_dttm, _mar_action_name
     """
     cont_flattened = duckdb.sql(q)
@@ -413,6 +419,7 @@ def cont_deduped(cont_flattened: duckdb.DuckDBPyRelation, mar_action_dedup_mappi
         , med_dose_unit
         , med_route_name
         , med_route_category
+        , caregiver_id
     WHERE mar_action_name_w_correct_dose = _mar_action_name
         OR mar_action_name_w_correct_dose IS NULL -- when there are no duplicates
     ORDER BY hospitalization_id, med_order_id, med_category, admin_dttm
@@ -456,6 +463,7 @@ def cont_cast_w_med_group(cont_deduped: duckdb.DuckDBPyRelation, cont_med_group_
         , med_group: CAST(med_group AS VARCHAR)
         , med_route_name: CAST(med_route_name AS VARCHAR)
         , med_route_category: CAST(med_route_category AS VARCHAR)
+        , caregiver_id: CAST(caregiver_id AS VARCHAR)
     """
     cont_cast_w_med_group = duckdb.sql(q).df()
     # check length is not altered

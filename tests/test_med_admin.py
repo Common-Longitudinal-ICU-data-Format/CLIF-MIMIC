@@ -63,6 +63,9 @@ def med_admin_input_data(load_fixture_csv):
     df['duration_in_mins'] = (df['endtime'] - df['starttime']).dt.total_seconds() / 60
 
     df['med_route_name'] = 'placeholder'
+    # caregiver_id is carried through cont_flattened/cont_deduped; the source
+    # fixture predates the column, so inject a placeholder for binding.
+    df['caregiver_id'] = 'placeholder'
 
     return df
 
