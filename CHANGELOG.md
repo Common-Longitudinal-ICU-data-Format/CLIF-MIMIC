@@ -26,12 +26,32 @@ The table below shows the latest status of each CLIF table. If you only need spe
 | `medication_admin_intermittent` | [v1.2.0](#v120---2026-03-16) | ✅ Stable   |                                                                          |
 | `position`                      | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
 | `crrt_therapy`                  | [v1.2.0](#v120---2026-03-16) | ✅ Stable   |                                                                          |
-| `ecmo_mcs`                      | [v1.2.0](#v120---2026-03-16) | 🧪 Beta    | Initial implementation; `device_category`/`mcs_group` imputation pending |
+| `mcs`                           | [Unreleased](#unreleased)    | 🧪 Beta    | Renamed from `ecmo_mcs`; restructured to CLIF 3.0.0 long format (one row per setting/measurement with `support`/`device`/`config`/`setting` categories) |
 | `hospital_diagnosis`            | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
 | `code_status`                   | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
 | `patient_procedures`            | [v1.0.0](#v100---2025-10-27) | ✅ Stable   |                                                                          |
 | `input`                         | [v1.2.0](#v120---2026-03-16) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
 | `output`                        | [v1.2.0](#v120---2026-03-16) | 🧩 Partial | Minimal implementation for net urine output calculation only             |
+
+
+## Unreleased
+
+### Readme
+
+- Table renamed: `ecmo_mcs` → `mcs` (CLIF 3.0.0).
+
+### Changed
+
+- rename the `ecmo_mcs` table to `mcs` and restructure it to the CLIF 3.0.0 schema: a **long format** with one row per recorded setting/measurement. The old wide layout (`flow`/`sweep_set`/`fdo2_set` columns, the `control_parameter_*` triple, `mcs_group`, and `ecmo_configuration_category`) is replaced by unified `support_name`/`support_category`, `device_name`/`device_category`, `config_name`/`config_category`, and `setting_name`/`setting_category`/`setting_value` columns, aligned to the new mCIDE lists under `CLIF/mCIDE/mcs/`.
+- device identity is driven by two mapping tables: `mcs_device.csv` (per charted device value, with a value-aware `device_context` that re-routes e.g. Impella `RP` → `impella_r`) and `mcs_device_context.csv` (per-context defaults for settings-only devices). Identity attaches on an exact-timestamp match, else falls back to the per-context default; the `device_events` aggregation is conflict-safe (rows agree → value, disagree → NULL) so concurrent biventricular support surfaces genuine ambiguity as NULL rather than an arbitrary pick. Carry-forward (as-of) attachment is a planned enhancement.
+- the non-CLIF-standard `_device_context` column is preserved in the output (leading underscore) as a QA aid for device linkage.
+- `*_name` fields (`support_name`/`device_name`/`config_name`) carry the raw source as `"<item label> = <charted value>"`, and retain all concurrent device strings on a BiVAD timestamp (e.g. Tandem `LA | RA`).
+- `UNSPECIFIED` in the mapping files is a placeholder for "considered → no value" and is mapped to `NULL` in the output (so the table contains only valid mCIDE categories or `NULL`); the literal token stays in the mappings to disambiguate a decided null from a not-yet-mapped blank.
+
+### Known issues
+
+- biventricular Tandem Heart (concurrent `LA` + `RA`) cannot be attributed to a side (its settings aren't side-tagged in MIMIC), so the `*_category` fields are left `NULL` for those rows (the `*_name` fields keep both source strings). See [ISSUESLOG](ISSUESLOG.md#mcs-table).
+- the mapping's `config_category = "5"` (Impella 5.0) differs from the mCIDE `5_0` spelling; passed through as-is pending mapping-owner review. See [ISSUESLOG](ISSUESLOG.md#mcs-table).
 
 
 ## v1.2.0 - 2026-03-16
@@ -43,7 +63,7 @@ The table below shows the latest status of each CLIF table. If you only need spe
 
 ### New
 
-- add initial implementation of the `ecmo_mcs` table in line with the updated schema. Note that a non-CLIF-standard column `_device_context` is preserved for users' own QA reference (see [ISSUESLOG](ISSUESLOG.md#ecmo_mcs-table) for details).
+- add initial implementation of the `ecmo_mcs` table in line with the updated schema. Note that a non-CLIF-standard column `_device_context` is preserved for users' own QA reference (see [ISSUESLOG](ISSUESLOG.md#mcs-table) for details).
 - add minimal implementation of the new `input` and `output` tables that contain only data elements that enable the calculation of net urine output in support of SOFA-2 related projects.
 - add documentation of miscellaneous known issues around diagnosis codes in MIMIC-IV in the [ISSUESLOG](ISSUESLOG.md).
 - add the table above that tracks the latest release and status for each CLIF table.
