@@ -1,0 +1,13 @@
+device_context,support_category,device_category,config_category,note
+ecmo_ecmo,ecmo,UNSPECIFIED,UNSPECIFIED,generic ECMO; brand unknown from MIMIC
+ecmo_ch,ecmo,cardiohelp,UNSPECIFIED,(CH) items denote a Cardiohelp machine
+centrimag_lv,lvad,centrimag,UNSPECIFIED,settings-only device (no device-ID event)
+centrimag_rv,rvad,centrimag,UNSPECIFIED,settings-only device (no device-ID event)
+durable_vad,lvad,durable,UNSPECIFIED,config comes from the Device (VAD) event
+heartware,lvad,durable,heartware,settings-only device (no device-ID event)
+hm2,lvad,durable,heartmate2,settings-only device (HM II items)
+lvad,lvad,UNSPECIFIED,UNSPECIFIED,legacy 220125 LVAD flow; side known but brand not
+rvad,rvad,UNSPECIFIED,UNSPECIFIED,legacy 220128 RVAD flow; side known but brand not
+impella_l,lvad,impella,UNSPECIFIED,config comes from the Type of Catheter event
+impella_r,rvad,impella,rp,right Impella is the RP catheter
+tandem_heart,UNSPECIFIED,tandemheart,UNSPECIFIED,side (support) comes only from the charted LA/RA value

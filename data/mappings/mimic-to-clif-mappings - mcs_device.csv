@@ -1,0 +1,20 @@
+itemid,label,value,n,support_category,device_category,config_category,device_context,note,status,reviewer
+229840,Circuit Configuration (CH),VA,2548,ecmo,cardiohelp,v_a,ecmo_ch,"the device_category for ECMOs (F2:F8) can assume values of cardiohelp, rotaflow, centrimag",,max
+229840,Circuit Configuration (CH),VV,2360,ecmo,cardiohelp,v_v,ecmo_ch,,,max
+229840,Circuit Configuration (CH),---,929,ecmo,cardiohelp,hybrid,ecmo_ch,,,max
+229268,Circuit Configuration (ECMO),VV,17950,ecmo,UNSPECIFIED,v_v,ecmo_ecmo,,validated,max
+229268,Circuit Configuration (ECMO),VA,9926,ecmo,UNSPECIFIED,v_a,ecmo_ecmo,,validated,max
+229268,Circuit Configuration (ECMO),---,290,ecmo,UNSPECIFIED,hybrid,ecmo_ecmo,,validated,max
+229268,Circuit Configuration (ECMO),VAV,41,ecmo,UNSPECIFIED,v_av,ecmo_ecmo,,validated,max
+229821,Device (VAD),HeartMate 3,9139,lvad,durable,heartmate3,durable_vad,,validated,max
+229821,Device (VAD),HeartWare,1082,lvad,durable,heartware,durable_vad,,validated,max
+229821,Device (VAD),HeartMate II,52,lvad,durable,heartmate2,durable_vad,,validated,max
+229679,Type of Catheter (Impella),2.5 / CP,8658,lvad,impella,2_5_or_cp,impella_l,,validated,max
+229679,Type of Catheter (Impella),5.5,2709,lvad,impella,5_5,impella_l,,validated,max
+229679,Type of Catheter (Impella),5.0,2649,lvad,impella,5_0,impella_l,,validated,max
+229679,Type of Catheter (Impella),RP,1384,rvad,impella,rp,impella_r,,validated,max
+229679,Type of Catheter (Impella),---,435,lvad,impella,UNSPECIFIED,impella_l,,validated,max
+228199,Type (Tandem Heart),Right Ventricular Assist/RA,2522,rvad,tandemheart,UNSPECIFIED,tandem_heart,tandemheart config_category will be NA -- Max. ,validated,max
+228199,Type (Tandem Heart),Left Ventricular Assist/LA,834,lvad,tandemheart,UNSPECIFIED,tandem_heart,,validated,max
+228199,Type (Tandem Heart),ProTek Duo,563,rvad,tandemheart,UNSPECIFIED,tandem_heart,,validated,max
+228199,Type (Tandem Heart),---,65,UNSPECIFIED,tandemheart,UNSPECIFIED,tandem_heart,"if the label of tandem heart doesn't have a right or left designation, we leave support category blank? -- Max; i'm adding a catch-all category called 'unspecified' to avoid leaving it as NULL",validated,max
