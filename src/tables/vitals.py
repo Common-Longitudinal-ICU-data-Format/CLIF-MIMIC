@@ -30,6 +30,18 @@ def convert_f_to_c(temp_f) -> float:
     else:
         raise("wrong type")
 
+@cache
+def normalize_temp_c(temp_c) -> float:
+    if isinstance(temp_c, str) or isinstance(temp_c, int):
+        temp_c = float(temp_c)
+
+    if isinstance(temp_c, float):
+        if temp_c > 79:
+            return convert_f_to_c(temp_c)
+        return temp_c
+    else:
+        raise("wrong type")
+
 def _main():
     logger.info("starting to build clif vitals table -- ")
     vitals_mapping = load_mapping_csv("vitals")
@@ -73,7 +85,7 @@ def _main():
 
     # convert temp from f to c with a coalesce logic
     # 223761 = temp in f, 223762 = temp in c
-    temp_wider["vital_value"] = temp_wider[223762].fillna(
+    temp_wider["vital_value"] = temp_wider[223762].apply(normalize_temp_c).fillna(
         temp_wider[223761].apply(convert_f_to_c)
         )
     temp_wider['vital_name'] = temp_wider.apply(
