@@ -2,16 +2,46 @@
 #    uv pip compile pyproject.toml -o requirements.txt
 annotated-types==0.7.0
     # via pydantic
+anyio==4.14.2
+    # via starlette
+click==8.5.1
+    # via
+    #   marimo
+    #   uvicorn
 cramjam==2.9.1
     # via fastparquet
+docutils==0.23
+    # via marimo
 duckdb==1.4.2
     # via clif-mimic (pyproject.toml)
+exceptiongroup==1.3.1
+    # via anyio
 fastparquet==2024.11.0
     # via clif-mimic (pyproject.toml)
 fsspec==2024.12.0
     # via fastparquet
+h11==0.16.0
+    # via uvicorn
+idna==3.20
+    # via anyio
+itsdangerous==2.2.0
+    # via marimo
+jedi==0.20.1
+    # via marimo
+loro==1.18.0
+    # via marimo
+marimo==0.25.2
+    # via clif-mimic (pyproject.toml)
+markdown==3.10.3
+    # via
+    #   marimo
+    #   pymdown-extensions
+msgspec==0.22.0
+    # via marimo
 mypy-extensions==1.1.0
     # via typing-inspect
+narwhals==2.29.0
+    # via marimo
 numpy==2.2.1
     # via
     #   fastparquet
@@ -20,6 +50,7 @@ numpy==2.2.1
 packaging==24.2
     # via
     #   fastparquet
+    #   marimo
     #   pandera
 pandas==2.3.3
     # via
@@ -28,31 +59,62 @@ pandas==2.3.3
     #   sf-hamilton
 pandera==0.26.1
     # via clif-mimic (pyproject.toml)
+parso==0.8.7
+    # via jedi
+polars==2.0.0
+    # via clif-mimic (pyproject.toml)
+polars-runtime-32==2.0.0
+    # via polars
+psutil==7.2.2
+    # via marimo
 pyarrow==22.0.0
     # via clif-mimic (pyproject.toml)
 pydantic==2.11.3
     # via pandera
 pydantic-core==2.33.1
     # via pydantic
+pydicom==3.0.2
+    # via clif-mimic (pyproject.toml)
+pygments==2.21.0
+    # via marimo
+pymdown-extensions==11.0.2
+    # via marimo
 python-dateutil==2.9.0.post0
     # via pandas
+python-multipart==0.0.32
+    # via marimo
 pytz==2024.2
     # via pandas
+pyyaml==6.0.3
+    # via
+    #   marimo
+    #   pymdown-extensions
+pyzmq==27.3.0
+    # via marimo
 sf-hamilton==1.88.0
     # via clif-mimic (pyproject.toml)
 six==1.17.0
     # via python-dateutil
+starlette==1.7.0
+    # via marimo
+tomlkit==0.15.2
+    # via marimo
 typeguard==4.4.2
     # via pandera
 typing-extensions==4.12.2
     # via
+    #   anyio
+    #   exceptiongroup
+    #   marimo
     #   pandera
     #   pydantic
     #   pydantic-core
     #   sf-hamilton
+    #   starlette
     #   typeguard
     #   typing-inspect
     #   typing-inspection
+    #   uvicorn
 typing-inspect==0.9.0
     # via
     #   pandera
@@ -61,3 +123,9 @@ typing-inspection==0.4.0
     # via pydantic
 tzdata==2024.2
     # via pandas
+utils==1.0.2
+    # via clif-mimic (pyproject.toml)
+uvicorn==0.54.0
+    # via marimo
+websockets==16.1.1
+    # via marimo

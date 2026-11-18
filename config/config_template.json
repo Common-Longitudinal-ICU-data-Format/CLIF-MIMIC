@@ -3,7 +3,9 @@
         "mimic_csv_dir": "",
         "mimic_parquet_dir": "",
         "mimic_cxr_meta_dir": "",
-        "mimic_cxr_batches": []
+        "mimic_cxr_batches": [],
+        "mimic_cxr_reports_zip": "",
+        "clif_patient_path": ""
     },
     "create_mimic_parquet_from_csv": 1,
     "overwrite_existing_mimic_parquet": 0,

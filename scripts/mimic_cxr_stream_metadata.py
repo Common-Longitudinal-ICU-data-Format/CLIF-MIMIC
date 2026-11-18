@@ -22,12 +22,29 @@ whole folder is done the parts are combined into
 
 which are the same files, in the same format, as mimic_cxr_metadata_batched.ipynb writes.
 
-Example (from the repo root; pydicom is not a project dependency):
-    uv run --with pydicom python dev/chest_xray/mimic_cxr_stream_metadata.py \
+Example (from the repo root):
+    uv run python scripts/mimic_cxr_stream_metadata.py \
         --user <physionet-username> --batch p19 --limit 20          # quick trial
     ... --user <physionet-username> --batch p19                     # the whole folder
 
 Output goes to output/mimic_cxr/ in the repo by default (git-ignored); change with --out-dir.
+
+If the DICOMs are already downloaded, pass --local-dir with the folder that holds MIMIC-CXR's
+`files/` folder (files/p10/p10000032/s50414267/<id>.dcm). The headers are then read from disk:
+no PhysioNet login, no wget and no network, and the output is the same.
+What it expects on disk: the .dcm files as downloaded from PhysioNet, under their original
+names and folders. Only the header at the start of each file is read (the pixel data is
+skipped), so this is fast. Only the folder given as --batch has to be there, not all of
+MIMIC-CXR; every .dcm found in it is used. If cxr-record-list.csv.gz is next to `files/`
+(or in the output folder), images it lists that are not on disk are counted and reported.
+    uv run python scripts/mimic_cxr_stream_metadata.py \
+        --local-dir /path/to/mimic-cxr/2.1.0 --batch p19
+
+A folder can take hours. On a Mac, put `caffeinate -i` in front of the command so the computer
+does not go to sleep while it runs (with --user or --local-dir alike):
+    caffeinate -i uv run python scripts/mimic_cxr_stream_metadata.py --user <physionet-username> --batch p19
+caffeinate only prevents sleep: keep the terminal window open, or run inside tmux / screen
+(also what to use on Linux or an HPC node). An interrupted run carries on when re-run.
 
 The PhysioNet password is asked for at start (or read from $PHYSIONET_PASSWORD). wget needs
 it in a config file, so it is kept in a private temporary file readable only by you, which
@@ -59,7 +76,7 @@ PIXEL_TAGS = {0x7FE00010, 0x7FE00009, 0x7FE00008}
 SEQ_COLUMNS = ['path', 'sequence', 'element', 'depth', 'tag', 'keyword', 'VR', 'value']
 RETRIES = 3
 WGET = shutil.which('wget')
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OUT_DIR = os.path.join(REPO_ROOT, 'output', 'mimic_cxr')
 
 
@@ -237,8 +254,10 @@ def fetch_header_bytes(url, config, first_bytes):
 
 def process(job):
     """Fetch one DICOM into memory, extract its metadata, drop the bytes."""
-    record_path, base_url, config, first_bytes, save_sequences = job
+    record_path, base_url, config, first_bytes, save_sequences, local_root = job
     key = record_path[len('files/'):]
+    if local_root is not None:
+        return process_local(os.path.join(local_root, record_path), record_path, key, save_sequences)
     try:
         data = fetch_header_bytes(base_url + record_path, config, first_bytes)
     except FetchError as e:
@@ -248,6 +267,21 @@ def process(job):
     except Exception as e:
         flat, seqs = {'path': key, 'error': repr(e)}, []
     return {'ok': True, 'flat': flat, 'seqs': seqs if save_sequences else [], 'nbytes': len(data)}
+
+
+def process_local(file_path, record_path, key, save_sequences):
+    """Extract the metadata of one DICOM on disk; only the header is read, not the pixel data."""
+    try:
+        fh = open(file_path, 'rb')
+    except OSError as e:
+        return {'ok': False, 'record_path': record_path, 'reason': f'cannot open file: {e.strerror}'}
+    with fh:
+        try:
+            flat, seqs = read_dicom_metadata(fh, key)
+        except Exception as e:
+            flat, seqs = {'path': key, 'error': repr(e)}, []
+        nbytes = fh.tell()
+    return {'ok': True, 'flat': flat, 'seqs': seqs if save_sequences else [], 'nbytes': nbytes}
 
 
 # --- parquet helpers ------------------------------------------------------------------------
@@ -304,14 +338,55 @@ def load_record_paths(out_dir, base_url, config, batch):
     return sorted(paths[paths.str.startswith(f'files/{batch}/') & paths.str.endswith('.dcm')])
 
 
+def resolve_local_root(local_dir):
+    """The folder that holds `files/`, given either that folder or the `files` folder itself."""
+    path = os.path.abspath(os.path.expanduser(local_dir))
+    if os.path.isdir(os.path.join(path, 'files')):
+        return path
+    if os.path.basename(path) == 'files' and os.path.isdir(path):
+        return os.path.dirname(path)
+    sys.exit(f'--local-dir: no "files" folder in {path}.\n'
+             '--local-dir is where the MIMIC-CXR DICOMs were downloaded (the folder holding '
+             'files/pXX/pXXXXXXXX/sXXXXXXXX/<id>.dcm), not the folder the Parquet output goes to.\n'
+             'If the DICOMs are not downloaded, leave --local-dir out and pass --user to read them from PhysioNet.')
+
+
+def load_local_record_paths(local_root, out_dir, batch):
+    """Paths of every DICOM of the batch found on disk, as `files/pXX/.../<id>.dcm`.
+
+    If PhysioNet's record list is next to the files (or in the output folder) it is used to
+    report DICOMs that are listed but not on disk, i.e. an incomplete download.
+    """
+    batch_dir = os.path.join(local_root, 'files', batch)
+    if not os.path.isdir(batch_dir):
+        sys.exit(f'--local-dir: {batch_dir} does not exist')
+    found = set()
+    for folder, _, names in os.walk(batch_dir):
+        rel = os.path.relpath(folder, local_root).replace(os.sep, '/')
+        found.update(f'{rel}/{name}' for name in names if name.endswith('.dcm'))
+    for record_list in (os.path.join(local_root, RECORD_LIST), os.path.join(out_dir, RECORD_LIST)):
+        if os.path.exists(record_list):
+            paths = pd.read_csv(record_list, dtype=str)['path']
+            listed = set(paths[paths.str.startswith(f'files/{batch}/') & paths.str.endswith('.dcm')])
+            absent = len(listed - found)
+            print(f'{os.path.basename(record_list)} lists {len(listed)} images for {batch}; '
+                  f'{absent} of them are not on disk' + (' (incomplete download?)' if absent else ''), flush=True)
+            break
+    else:
+        print(f'no {RECORD_LIST} found to check the download is complete; using every .dcm on disk', flush=True)
+    return sorted(found)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--batch', required=True, help='top-level folder to process, e.g. p19')
-    ap.add_argument('--user', required=True, help='PhysioNet username')
+    ap.add_argument('--user', help='PhysioNet username (not needed with --local-dir)')
+    ap.add_argument('--local-dir',
+                    help="read DICOMs already on disk instead of PhysioNet: the folder holding MIMIC-CXR's files/ folder")
     ap.add_argument('--out-dir', default=DEFAULT_OUT_DIR,
                     help='where the Parquet files go (default: output/mimic_cxr in the repo)')
     ap.add_argument('--chunk-size', type=int, default=500, help='images per saved part file')
-    ap.add_argument('--workers', type=int, default=4, help='simultaneous connections to PhysioNet')
+    ap.add_argument('--workers', type=int, default=4, help='images read at the same time (connections to PhysioNet)')
     ap.add_argument('--first-bytes', type=int, default=64 * 1024,
                     help='bytes read from the start of each file before checking the header is complete')
     ap.add_argument('--full-files', action='store_true', help='download every file completely')
@@ -323,7 +398,10 @@ def main():
 
     if not re.fullmatch(r'p1\d', args.batch):
         sys.exit('--batch must be one of p10 ... p19')
-    if WGET is None:
+    local_root = resolve_local_root(args.local_dir) if args.local_dir else None
+    if local_root is None and not args.user:
+        sys.exit('pass --user (to read from PhysioNet) or --local-dir (to read DICOMs already on disk)')
+    if local_root is None and WGET is None:
         sys.exit('wget is not installed (on a Mac: brew install wget)')
     os.makedirs(args.out_dir, exist_ok=True)
     warnings.filterwarnings('ignore', module='pydicom')
@@ -343,17 +421,22 @@ def main():
     if args.overwrite and os.path.isdir(parts_dir):
         shutil.rmtree(parts_dir)
 
-    password = os.environ.get('PHYSIONET_PASSWORD') or getpass.getpass(f'PhysioNet password for {args.user}: ')
-    config = make_wget_config(args.user, password)
-
-    try:
-        record_paths = load_record_paths(args.out_dir, base_url, config, args.batch)
-    except FetchError as e:
-        sys.exit(f'could not download {RECORD_LIST}: {e}')
-    except AuthError as e:
-        sys.exit(f'PhysioNet rejected the login ({e}). Check the username and password.')
-    if not record_paths:
-        sys.exit(f'no DICOMs listed for {args.batch} in {RECORD_LIST}')
+    if local_root is not None:
+        config = None
+        record_paths = load_local_record_paths(local_root, args.out_dir, args.batch)
+        if not record_paths:
+            sys.exit(f'no .dcm files under {os.path.join(local_root, "files", args.batch)}')
+    else:
+        password = os.environ.get('PHYSIONET_PASSWORD') or getpass.getpass(f'PhysioNet password for {args.user}: ')
+        config = make_wget_config(args.user, password)
+        try:
+            record_paths = load_record_paths(args.out_dir, base_url, config, args.batch)
+        except FetchError as e:
+            sys.exit(f'could not download {RECORD_LIST}: {e}')
+        except AuthError as e:
+            sys.exit(f'PhysioNet rejected the login ({e}). Check the username and password.')
+        if not record_paths:
+            sys.exit(f'no DICOMs listed for {args.batch} in {RECORD_LIST}')
 
     os.makedirs(parts_dir, exist_ok=True)
     done = set()
@@ -364,13 +447,14 @@ def main():
 
     free_gb = shutil.disk_usage(args.out_dir).free / 1e9
     print(f'output folder:   {args.out_dir}  ({free_gb:,.0f} GB free)')
+    print(f'source:          {"DICOMs on disk in " + local_root if local_root else "PhysioNet"}')
     print(f'{args.batch}: {len(record_paths)} images listed, {len(done)} already done, '
           f'{len(run)} to do this run', flush=True)
 
     next_part = 1 + max([int(re.search(r'_(\d+)\.parquet$', f).group(1))
                          for f in part_files(parts_dir, 'meta')], default=-1)
     failures, n_ok, n_bytes, started = [], 0, 0, time.time()
-    jobs = [(p, base_url, config, first_bytes, save_sequences) for p in run]
+    jobs = [(p, base_url, config, first_bytes, save_sequences, local_root) for p in run]
 
     try:
         with ThreadPoolExecutor(max_workers=args.workers) as pool:
