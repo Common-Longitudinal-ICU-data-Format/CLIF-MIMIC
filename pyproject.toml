@@ -14,8 +14,11 @@ dependencies = [
     "marimo>=0.18.4",
     "pandas>=2.3.3",
     "pandera>=0.26.1",
+    "polars>=1.39.3",
     "pyarrow>=21.0.0",
+    "pydicom>=3.0.2",
     "sf-hamilton>=1.88.0",
+    "utils>=1.0.2",
 ]
 
 [dependency-groups]
