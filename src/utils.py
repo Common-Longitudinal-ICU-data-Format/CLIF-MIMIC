@@ -27,6 +27,10 @@ CURRENT_WORKSPACE = config["current_workspace"]
 MIMIC_CSV_DIR = config[CURRENT_WORKSPACE]["mimic_csv_dir"]
 MIMIC_PARQUET_DIR = config[CURRENT_WORKSPACE]["mimic_parquet_dir"]
 MIMIC_PARQUET_DIR = f"{MIMIC_CSV_DIR}/parquet" if MIMIC_PARQUET_DIR == "" else MIMIC_PARQUET_DIR
+# DICOM header metadata extracted by dev/chest_xray/mimic_cxr_stream_metadata.py (for chest_xray)
+MIMIC_CXR_META_DIR = config[CURRENT_WORKSPACE].get("mimic_cxr_meta_dir", "") or f"{REPO_ROOT}/output/mimic_cxr"
+# MIMIC-CXR folders to build chest_xray from, e.g. ["p18", "p19"]; empty = every folder extracted so far
+MIMIC_CXR_BATCHES = config[CURRENT_WORKSPACE].get("mimic_cxr_batches", [])
 CLIF_OUTPUT_DIR_NAME = config["clif_output_dir_name"]
 CLIF_VERSION = config["clif_version"]
 EXCLUDED_LABELS_DEFAULT = [

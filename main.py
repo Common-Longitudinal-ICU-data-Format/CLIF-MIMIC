@@ -3,6 +3,9 @@ import logging
 from src.tables import labs, patient, hospitalization, adt, respiratory_support, vitals, patient_assessments, \
     medication_admin, medication_admin_continuous, medication_admin_intermittent, position, crrt_therapy, \
     ecmo_mcs, hospital_diagnosis, patient_procedures, code_status, input, output
+from src.tables import chest_xray_alt as chest_xray
+# marimo keeps underscore names private to a cell, so the notebook exposes main() instead of _main()
+chest_xray._main = chest_xray.main
 from src.logging_config import setup_logging, get_logger
 from src.utils import resave_all_mimic_tables_from_csv_to_parquet, \
     resave_select_mimic_tables_from_csv_to_parquet, resave_mimic_table_from_csv_to_parquet, \
